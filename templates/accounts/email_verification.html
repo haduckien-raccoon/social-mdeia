@@ -1,2 +1,125 @@
-<h2>Email Verified Successfully!</h2>
-<a href="/accounts/login/">Go to Login</a>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xác thực Email</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+        background-color: #f7f8fc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        color: #333;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 500px;
+        background: #fff;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .logo {
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 30px;
+        color: #6a5af9;
+    }
+
+    .illustration {
+        width: 150px;
+        height: auto;
+        margin-bottom: 25px;
+    }
+
+    h1 {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    h2 {
+        font-size: 18px;
+        font-weight: 500;
+        margin-bottom: 20px;
+        color: #555;
+    }
+
+    p.description {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 35px;
+        line-height: 1.6;
+    }
+
+    .btn-action {
+        background-color: #6a5af9;
+        color: #fff;
+        border: none;
+        padding: 12px 35px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+
+    .btn-action:hover {
+        background-color: #5846e0;
+    }
+
+    /* Message màu theo trạng thái */
+    .message {
+        font-size: 14px;
+        margin-bottom: 25px;
+        font-weight: 500;
+    }
+
+    @media (max-width: 600px) {
+        .container {
+            padding: 30px 20px;
+        }
+        h1 { font-size: 22px; }
+        h2 { font-size: 16px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="logo">MyApp</div>
+
+    <img src="https://cdn-icons-png.flaticon.com/512/9069/9069049.png" alt="Email Illustration" class="illustration">
+
+    {% if success %}
+        <div class="message" style="color: #28a745;">{{ message }}</div>
+    {% else %}
+        <div class="message" style="color: #dd2a7b;">{{ message }}</div>
+    {% endif %}
+
+    <h1>Xác thực Email</h1>
+    <h2>Cảm ơn {{ user.username }} đã đăng ký!</h2>
+    <p class="description">
+        Hãy nhấn nút bên dưới để đăng nhập vào tài khoản của bạn và bắt đầu trải nghiệm dịch vụ.
+    </p>
+
+    <a href="/accounts/login/" class="btn-action">Đăng nhập</a>
+</div>
+
+</body>
+</html>

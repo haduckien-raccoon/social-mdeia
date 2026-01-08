@@ -1,16 +1,116 @@
-<h2>Login</h2>
-<form id="login-form">
-  <input type="email" name="email" placeholder="Email" required><br>
-  <input type="password" name="password" placeholder="Password" required><br>
-  <button type="submit">Login</button>
-</form>
-<div id="message"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login UI</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #ffffff; }
+    .container { display: flex; width: 900px; height: 550px; background: #fff; border-radius: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); overflow: hidden; }
+
+    /* Left Section (Welcome) */
+    .left-section { width: 50%; background-color: #6a5af9; border-top-right-radius: 150px; border-bottom-right-radius: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; padding: 20px; z-index: 1; }
+    .welcome-title { font-size: 32px; font-weight: 600; margin-bottom: 10px; }
+    .sub-text { font-size: 16px; margin-bottom: 30px; font-weight: 500; }
+    .btn-switch { padding: 10px 45px; background: transparent; border: 2px solid white; border-radius: 10px; color: white; font-size: 16px; font-weight: 500; cursor: pointer; transition: 0.3s; display: inline-block; text-decoration: none; }
+    .btn-switch:hover { background: white; color: #6a5af9; }
+
+    /* Right Section (Form Login) */
+    .right-section { width: 50%; display: flex; flex-direction: column; justify-content: center; padding: 40px 60px; }
+    .header-title { font-size: 32px; font-weight: 600; color: #333; text-align: center; margin-bottom: 40px; }
+    .input-group { position: relative; margin-bottom: 20px; }
+    .input-group input { width: 100%; padding: 15px 45px 15px 20px; background-color: #e0e2e5; border: none; outline: none; border-radius: 8px; font-size: 14px; color: #333; }
+    .input-group input::placeholder { color: #666; font-weight: 500; }
+    .input-group i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #555; font-size: 18px; }
+    .forgot-pass { text-align: left; font-size: 14px; color: #444; margin-bottom: 25px; cursor: pointer; font-weight: 500; text-decoration: none; display: inline-block; }
+    .btn-submit { width: 100%; padding: 15px; background-color: #6a5af9; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; margin-bottom: 15px; transition: background 0.3s; }
+    .btn-submit:hover { background-color: #5846e0; }
+    #message { text-align: center; font-size: 14px; margin-bottom: 15px; word-wrap: break-word; }
+    .social-text { text-align: center; font-size: 14px; color: #444; margin-bottom: 20px; font-weight: 500; }
+    .social-icons { display: flex; justify-content: center; gap: 20px; }
+    .social-btn { width: 40px; height: 40px; border: 1px solid #555; border-radius: 6px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #333; font-size: 18px; transition: 0.3s; text-decoration: none; }
+    .social-btn:hover { background-color: #f0f0f0; }
+
+    @media (max-width: 768px) {
+        .container { flex-direction: column; height: auto; width: 90%; }
+        .left-section, .right-section { width: 100%; }
+        .left-section { padding: 40px 20px; border-radius: 30px 30px 0 0; order: 1; }
+        .right-section { padding: 40px 20px; order: 2; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="left-section">
+        <h1 class="welcome-title">Hello, Welcome!</h1>
+        <p class="sub-text">Don't have an account?</p>
+        <a href="/accounts/register/" class="btn-switch">Registration</a>
+    </div>
+
+    <div class="right-section">
+        <h2 class="header-title">Login</h2>
+
+        <form id="login-form">
+            <div class="input-group">
+                <input type="email" name="email" placeholder="Email" required>
+                <i class="fa-regular fa-user"></i>
+            </div>
+
+            <div class="input-group">
+                <input type="password" name="password" placeholder="Password" required>
+                <i class="fa-solid fa-lock-open"></i>
+            </div>
+
+            <a href="/forgot-password/" class="forgot-pass">Forgot Password!</a>
+
+            <button type="submit" class="btn-submit">Login</button>
+        </form>
+
+        <div id="message"></div>
+
+        <p class="social-text">Or login with social platforms</p>
+
+        <div class="social-icons">
+            <a href="#" class="social-btn"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="#" class="social-btn"><i class="fa-brands fa-google"></i></a>
+            <a href="#" class="social-btn"><i class="fa-brands fa-tiktok"></i></a>
+        </div>
+    </div>
+</div>
+
 <script>
-document.getElementById('login-form').onsubmit = async (e)=>{
-  e.preventDefault();
-  const data = Object.fromEntries(new FormData(e.target));
-  const res = await fetch('/accounts/login/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-  const result = await res.json();
-  document.getElementById('message').innerText = result.message || result.error;
+document.getElementById('login-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    try {
+        const res = await fetch('/accounts/api/login/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        const msg = result.message || result.error || "Something went wrong!";
+        const messageDiv = document.getElementById('message');
+        messageDiv.innerText = msg;
+        messageDiv.style.color = result.error ? "#dd2a7b" : "#28a745";
+
+        // Nếu login thành công, redirect tới home page (tuỳ chỉnh)
+        if (!result.error && result.redirect_url) {
+            window.location.href = result.redirect_url;
+        }
+
+    } catch (err) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.innerText = "Network error!";
+        messageDiv.style.color = "#dd2a7b";
+    }
 };
 </script>
+
+</body>
+</html>

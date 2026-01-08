@@ -9,52 +9,57 @@ from .services import create_jwt_pair_for_user, create_password_reset_token
 from datetime import timedelta
 from django.core.mail import send_mail
 from django.conf import settings
+from django.shortcuts import render, redirect
 
 # Register + Email verification
+# accounts/views.py
+from .services import register_user
+
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
-            token = EmailVerificationToken.objects.create(
-                user=user,
-                expires_at=timezone.now() + timedelta(hours=24)
-            )
-            verify_url = f"http://127.0.0.1:8000/accounts/verify-email/?token={token.token}"
-            send_mail('Verify email', f'Click: {verify_url}', settings.DEFAULT_FROM_EMAIL, [user.email])
-            return Response({'message': 'User registered. Check email to verify.'}, status=201)
-        return Response(serializer.errors, status=400)
+            username = serializer.validated_data['username']
+            email = serializer.validated_data['email']
+            password = serializer.validated_data['password']
 
-class VerifyEmailView(APIView):
-    def get(self, request):
-        token_value = request.GET.get('token')
-        try:
-            token = EmailVerificationToken.objects.get(token=token_value, is_used=False)
-        except EmailVerificationToken.DoesNotExist:
-            return Response({'error': 'Invalid or expired token'}, status=400)
-        if token.expires_at < timezone.now():
-            return Response({'error': 'Token expired'}, status=400)
-        token.is_used = True
-        token.save()
-        token.user.is_active = True
-        token.user.save()
-        return Response({'message': 'Email verified, you can login now'})
+            user, error = register_user(username, email, password)
+            print(f"[DEBUG] Ket qua dang ky: User={user}, Error={error}")
+            if error:
+                return Response({'error': error}, status=400)
+
+            return Response({'message': 'User registered. Check email to verify.'}, status=201)
+        else:
+            # Check the type of serializer.errors
+            if isinstance(serializer.errors, dict):
+                error = str(list(serializer.errors.values()))
+            else:
+                # Handle the custom object
+                error = str(serializer.errors.get('message', 'Unknown error'))
+            print(f"[DEBUG] Loi serializer (string): {error}")
+            return Response({'error': serializer.errors}, status=400)
 
 # Login
 class LoginView(APIView):
     def post(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
-        user = authenticate(request, email=email, password=password)
+        print(f"[DEBUG] Dang nhap voi email: {email}, mat khau: {password}")
+
+        # Sử dụng đúng tên field với USERNAME_FIELD
+        user = authenticate(request, username=email, password=password)
+
         if not user:
             return Response({'error': 'Invalid credentials'}, status=401)
         if not user.is_active:
             return Response({'error': 'Email not verified'}, status=401)
+
         access_token, refresh_token = create_jwt_pair_for_user(user)
         response = Response({'message': 'Login successful'})
         response.set_cookie('access', access_token, httponly=True, max_age=900)
         response.set_cookie('refresh', refresh_token, httponly=True, max_age=604800)
         return response
+
 
 # Logout
 class LogoutView(APIView):
@@ -75,8 +80,8 @@ class ForgotPasswordView(APIView):
             except User.DoesNotExist:
                 return Response({'message': 'If email exists, reset link sent'}, status=200)
             token = create_password_reset_token(user)
-            reset_url = f"http://127.0.0.1:8000/accounts/reset-password/?token={token.token}"
-            send_mail('Reset password', f'Click: {reset_url}', settings.DEFAULT_FROM_EMAIL, [user.email])
+            reset_url = f"http://127.0.0.1:8080/accounts/api/reset-password/?token={token.token}"
+            send_mail('Reset password', f'Click: {reset_url}', settings.EMAIL_HOST_USER, [user.email])
             return Response({'message': 'Password reset link sent to email'}, status=200)
         return Response(serializer.errors, status=400)
 

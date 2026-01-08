@@ -7,4 +7,4 @@
 - pip install mysqlclient>=2.2.1
 -----------------------------------------------------------------------
 # Run app: 
-- python manage.py runserver --settings=config.settings.local
+- python manage.py runserver
