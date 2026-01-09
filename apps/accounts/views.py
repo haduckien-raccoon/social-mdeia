@@ -4,8 +4,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.conf import settings
+import jwt
 
-from .models import User, PasswordResetToken
+from .models import User, PasswordResetToken, EmailVerificationToken, UserProfile
 from .services import (
     register_user,
     login_user,
@@ -13,6 +14,7 @@ from .services import (
     logout_user,
     create_password_reset_token,
     reset_user_password,
+    verify_email_token
 )
 
 @csrf_exempt
@@ -138,27 +140,37 @@ def verify_email_view(request):
         })
 
     try:
-        token = EmailVerificationToken.objects.get(
-            token=token_value,
-            is_used=False
-        )
+        verify_email_token(token_value)
     except EmailVerificationToken.DoesNotExist:
         return render(request, "accounts/verify_email.html", {
             "error": "Token is invalid or already used."
         })
 
-    if token.expires_at < timezone.now():
-        return render(request, "accounts/verify_email.html", {
-            "error": "Verification token has expired."
-        })
-    
-    user = token.user
-    user.is_active = True
-    user.save()
-
-    token.is_used = True
-    token.save()
-
     return render(request, "accounts/verify_email.html", {
         "message": "Email verified successfully. You can login now."
     })
+
+#profile
+def profile_view(request):
+    access_token = request.COOKIES.get("access")
+
+    if not access_token:
+        return redirect("login")
+
+    try:
+        payload = jwt.decode(
+            access_token,
+            settings.SECRET_KEY,
+            algorithms=["HS256"]
+        )
+        user_id = payload.get("user_id")
+        user = User.objects.get(id=user_id)
+        profile = UserProfile.objects.get(user=user)
+
+        return render(request, "accounts/profile.html", {
+            "user": user,
+            "profile": profile
+        })
+
+    except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
+        return redirect("login")

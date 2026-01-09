@@ -15,6 +15,7 @@
 
 # Run app: 
 - python manage.py runserver
+<<<<<<< HEAD
 
 _________________________________________
 
@@ -22,3 +23,8 @@ _________________________________________
 -----------------------------------------------------
 ## Cài đặt mysqlclient
 ```conda install -c conda-forge mysqlclient```
+=======
+------------------------------------------------------------------------
+# Run app:
+- uvicorn config.asgi:application --host 127.0.0.1 --port 8080
+>>>>>>> 61a11d7 (fix: load image)

@@ -61,12 +61,23 @@ class User(AbstractBaseUser, PermissionsMixin):
 # ---------------------------
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    full_name = models.CharField(max_length=255, blank=True)
-    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    full_name = models.CharField(max_length=255, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    birth_day = models.DateField(blank=True, null=True)
+    avatar = models.ImageField(upload_to="avatars/", default="avatars/normal.jpg", blank=True, null=True)
     cover_image = models.ImageField(upload_to="covers/", blank=True, null=True)
-    bio = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    bio = models.TextField(blank=True, null=True, max_length=500)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+    def get_display_fields(self):
+        return [
+            ("Full Name", self.full_name),
+            ("Address", self.address),
+            ("Phone Number", self.phone_number),
+            ("Birth Day", self.birth_day),
+            ("Bio", self.bio),
+        ]
 
 # ---------------------------
 # Refresh / Reset / Email Tokens
@@ -75,19 +86,19 @@ class RefreshToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     token = models.CharField(max_length=255, unique=True)
     is_revoked = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField()
 
 class PasswordResetToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     token = models.UUIDField(default=uuid.uuid4, unique=True)
     is_used = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField()
 
 class EmailVerificationToken(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)    
     token = models.UUIDField(default=uuid.uuid4, unique=True)
     is_used = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField()

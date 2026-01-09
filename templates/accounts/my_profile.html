@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Desktop UI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- CÀI ĐẶT CHUNG --- */
+        :root {
+            --bg-color: #fafafa;
+            --white: #ffffff;
+            --text-black: #262626;
+            --text-grey: #8e8e8e;
+            --border-color: #dbdbdb;
+            --link-blue: #00376b;
+            --btn-bg: #efefef;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-black);
+            font-size: 14px;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* --- THANH MENU TRÊN CÙNG (NAVBAR) --- */
+        .navbar {
+            background-color: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-content {
+            width: 100%;
+            max-width: 935px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold; /* Giả lập logo text */
+            font-family: 'Cursive', serif; /* Font kiểu Instagram */
+        }
+
+        .search-bar {
+            background: #efefef;
+            border-radius: 8px;
+            padding: 8px 16px;
+            width: 250px;
+            color: var(--text-grey);
+            font-size: 14px;
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 22px;
+            font-size: 22px;
+        }
+
+        /* --- CONTAINER CHÍNH --- */
+        .container {
+            max-width: 935px; /* Chiều rộng chuẩn của Insta Desktop */
+            margin: 90px auto 30px; /* Cách top để tránh navbar */
+            padding: 0 20px;
+        }
+
+        /* --- PHẦN HEADER PROFILE --- */
+        .profile-header {
+            display: flex;
+            margin-bottom: 44px;
+        }
+
+        /* Avatar bên trái */
+        .profile-img-container {
+            flex: 0 0 290px; /* Chiếm 1/3 chiều rộng */
+            display: flex;
+            justify-content: center;
+            margin-right: 30px;
+        }
+
+        .profile-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            padding: 4px; /* Khoảng trắng giữa viền và ảnh */
+            background: #fff; /* Nền trắng */
+            /* Tạo viền gradient */
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px #d62976; 
+            /* Cách đơn giản giả lập gradient ring bằng box-shadow hoặc border */
+            /* Để làm gradient thật cần wrapper phức tạp hơn, ở đây dùng màu đơn giản */
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        /* Gradient ring thực tế hơn */
+        .gradient-ring {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .gradient-ring img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            object-fit: cover;
+            background-color: #ddd;
+        }
+
+        /* Thông tin bên phải */
+        .profile-info {
+            flex: 1;
+        }
+
+        /* Dòng 1: Tên user + Nút */
+        .row-1 {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .username {
+            font-size: 28px;
+            font-weight: 300;
+            margin-right: 20px;
+        }
+
+        .btns-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            background-color: var(--btn-bg);
+            border: none;
+            padding: 7px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-icon {
+            padding: 7px 10px;
+        }
+
+        /* Dòng 2: Thông số (Posts, Followers) */
+        .row-2 {
+            display: flex;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .stat-item {
+            margin-right: 40px;
+        }
+
+        .stat-item span {
+            font-weight: bold;
+        }
+
+        /* Dòng 3: Bio */
+        .row-3 {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .fullname {
+            font-weight: bold;
+        }
+
+        .bio-category {
+            color: var(--text-grey);
+        }
+
+        .bio-link {
+            color: var(--link-blue);
+            font-weight: 600;
+        }
+
+        /* --- HIGHLIGHTS --- */
+        .highlights {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 44px;
+            padding-left: 50px; /* Canh chỉnh đẹp hơn trên desktop */
+            overflow-x: auto;
+        }
+
+        .highlight-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 80px;
+            cursor: pointer;
+        }
+
+        .highlight-circle {
+            width: 77px;
+            height: 77px;
+            border-radius: 50%;
+            background-color: #efefef;
+            border: 1px solid var(--border-color);
+            margin-bottom: 10px;
+        }
+
+        .highlight-title {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* --- TABS --- */
+        .tabs {
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-bottom: 20px;
+        }
+
+        .tab-item {
+            padding-top: 15px;
+            color: var(--text-grey);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-top: 1px solid transparent;
+            margin-top: -1px;
+        }
+
+        .tab-item.active {
+            color: var(--text-black);
+            border-top: 1px solid var(--text-black);
+        }
+
+        .tab-item i {
+            font-size: 14px;
+        }
+
+        /* --- GRID ẢNH --- */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 cột đều nhau */
+            gap: 28px; /* Khoảng cách giữa các ảnh trên Desktop lớn hơn */
+        }
+
+        .gallery-item {
+            position: relative;
+            background-color: #efefef;
+            aspect-ratio: 1 / 1; /* Đảm bảo khung vuông */
+            cursor: pointer;
+            overflow: hidden;
+        }
+        
+        .gallery-item:hover {
+            opacity: 0.9;
+        }
+
+        /* Responsive nhẹ cho Tablet */
+        @media (max-width: 736px) {
+            .profile-header {
+                flex-direction: column;
+            }
+            .profile-img-container {
+                margin-right: 0;
+                margin-bottom: 20px;
+                flex: 0;
+            }
+            .row-1 {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .gallery {
+                gap: 3px; /* Về lại gap nhỏ như mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo">Instagram</div>
+            <div class="search-bar">Search</div>
+            <div class="nav-icons">
+                <i class="fa-solid fa-house"></i>
+                <i class="fa-brands fa-facebook-messenger"></i>
+                <i class="fa-regular fa-compass"></i>
+                <i class="fa-regular fa-heart"></i>
+                <i class="fa-regular fa-circle-user"></i>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <header class="profile-header">
+            <div class="profile-img-container">
+                <div class="gradient-ring">
+                    <img src="https://via.placeholder.com/150/CCCCCC/FFFFFF?text=Avatar" alt="Avatar">
+                </div>
+            </div>
+
+            <div class="profile-info">
+                <div class="row-1">
+                    <h2 class="username">yournamehere</h2>
+                    <div class="btns-container">
+                        <button class="btn">Following <i class="fa-solid fa-chevron-down"></i></button>
+                        <button class="btn">Message</button>
+                        <button class="btn">Contact</button>
+                        <button class="btn btn-icon"><i class="fa-solid fa-user-plus"></i></button>
+                    </div>
+                    <i class="fa-solid fa-ellipsis" style="margin-left: 10px; cursor: pointer; font-size: 20px;"></i>
+                </div>
+
+                <div class="row-2">
+                    <div class="stat-item"><span>883</span> posts</div>
+                    <div class="stat-item"><span>14.1k</span> followers</div>
+                    <div class="stat-item"><span>1,000</span> following</div>
+                </div>
+
+                <div class="row-3">
+                    <div class="fullname">Yourname Here</div>
+                    <div class="bio-category">Entrepreneur</div>
+                    <div>The best solutions for your business</div>
+                    <div>Переглянути перегляд</div>
+                    <a href="#" class="bio-link">www.yoursite.com</a>
+                    <div style="color: var(--text-grey); font-size: 12px; margin-top: 5px;">Mainstreet 19, Ukraine 2200</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="highlights">
+            <div class="highlight-item">
+                <div class="highlight-circle"></div>
+                <div class="highlight-title">About</div>
+            </div>
+            <div class="highlight-item">
+                <div class="highlight-circle"></div>
+                <div class="highlight-title">Catalog</div>
+            </div>
+            <div class="highlight-item">
+                <div class="highlight-circle"></div>
+                <div class="highlight-title">Price</div>
+            </div>
+            <div class="highlight-item">
+                <div class="highlight-circle"></div>
+                <div class="highlight-title">Reviews</div>
+            </div>
+            <div class="highlight-item">
+                <div class="highlight-circle"></div>
+                <div class="highlight-title">Location</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab-item active">
+                <i class="fa-solid fa-table-cells"></i> POSTS
+            </div>
+            <div class="tab-item">
+                <i class="fa-solid fa-clapperboard"></i> REELS
+            </div>
+            <div class="tab-item">
+                <i class="fa-regular fa-bookmark"></i> SAVED
+            </div>
+            <div class="tab-item">
+                <i class="fa-solid fa-user-tag"></i> TAGGED
+            </div>
+        </div>
+
+        <div class="gallery">
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+            <div class="gallery-item"></div>
+        </div>
+    </div>
+</body>
+</html>

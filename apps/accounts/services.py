@@ -80,6 +80,10 @@ def register_user(username, email, password):
 
     return user, None
 
+def create_user_profile(user):
+    profile, created = UserProfile.objects.get_or_create(user=user)
+    return profile, created
+
 def verify_email_token(token_value):
     """
     Xác thực token email.
@@ -99,7 +103,10 @@ def verify_email_token(token_value):
     # Kiểm tra hết hạn
     if token.expires_at < timezone.now():
         return False, "Token đã hết hạn."
-
+    #tạo profile nếu chưa có
+    create_user_profile(token.user)
+    #in ra log để debug
+    print(f"[DEBUG] Email verified for user: {token.user.email}")
     try:
         # Kích hoạt user và đánh dấu token đã dùng
         token.is_used = True
@@ -108,12 +115,9 @@ def verify_email_token(token_value):
         token.user.save()
         user = token.user
         # Tạo profile mặc định nếu chưa có
-        if not hasattr(user, 'userprofile'):
-            UserProfile.objects.create(user=user)
     except Exception as e:
         print(f"[ERROR] Lỗi khi cập nhật token/user: {e}")
         return False, "Đã xảy ra lỗi khi xác thực email."
-
     return True, "Email đã được xác thực thành công! Bạn có thể đăng nhập ngay bây giờ.", user
 
 def login_user(email, password):
@@ -181,3 +185,101 @@ def reset_user_password(token_value, new_password):
     token.save()
 
     return True, "Password has been reset successfully"
+
+def get_profile_by_user_id(user_id):
+    try:
+        profile = UserProfile.objects.get(user__id=user_id)
+        return profile
+    except UserProfile.DoesNotExist:
+        return None
+
+def update_user_profile(user, full_name=None, avatar=None, cover_image=None, bio=None):
+    profile, created = UserProfile.objects.get_or_create(user=user)
+
+    if full_name is not None:
+        profile.full_name = full_name
+    if avatar is not None:
+        profile.avatar = avatar
+    if cover_image is not None:
+        profile.cover_image = cover_image
+    if bio is not None:
+        profile.bio = bio
+
+    profile.updated_at = timezone.now()
+    profile.save()
+    return profile
+    
+def change_email(user, new_email):
+    if User.objects.filter(email=new_email).exclude(id=user.id).exists():
+        return False, "Email already in use"
+
+    user.email = new_email
+    user.is_active = False  # Deactivate until email is verified
+    user.save()
+
+    # Tạo token email mới
+    token = EmailVerificationToken.objects.create(
+        user=user,
+        expires_at=timezone.now() + timedelta(hours=1)
+    )
+    # Gửi mail xác thực
+    verify_url = f"http://127.0.0.1:8080/accounts/verify-email/?token={token.token}"
+    send_mail('Verify new email', f'Click: {verify_url}', settings.EMAIL_HOST_USER, [user.email])
+    return True, "Email change initiated. Please verify your new email."
+
+def change_password(user, old_password, new_password):
+    if not user.check_password(old_password):
+        return False, "Old password is incorrect"
+
+    user.set_password(new_password)
+    user.save()
+    return True, "Password changed successfully"
+
+def change_username(user, new_username):
+    if User.objects.filter(username=new_username).exclude(id=user.id).exists():
+        return False, "Username already in use"
+
+    user.username = new_username
+    user.save()
+    return True, "Username changed successfully"
+
+def deactivate_account(user):
+    user.is_active = False
+    user.save()
+    return True, "Account deactivated successfully"
+
+def activate_account(user):
+    user.is_active = True
+    user.save()
+    return True, "Account activated successfully"
+
+def ban_account(user):
+    user.is_banned = True
+    user.save()
+    return True, "Account banned successfully"
+
+def unban_account(user):
+    user.is_banned = False
+    user.save()
+    return True, "Account unbanned successfully"
+    
+def get_user_by_email(email):
+    try:
+        user = User.objects.get(email=email)
+        return user
+    except User.DoesNotExist:
+        return None
+        
+def get_user_by_username(username):
+    try:
+        user = User.objects.get(username=username)
+        return user
+    except User.DoesNotExist:
+        return None
+
+def get_user_by_id(user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        return user
+    except User.DoesNotExist:
+        return None
