@@ -15,8 +15,20 @@ def decode_access_token(token):
 def generate_access_token(user):
     payload = {
         "user_id": user.id,
-        "email": user.email,
         "exp": timezone.now() + timezone.timedelta(minutes=15),
         "iat": timezone.now(),
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+
+def generate_refresh_token(user):
+    payload = {
+        "user_id": user.id,
+        "exp": timezone.now() + timezone.timedelta(days=7),
+        "iat": timezone.now(),
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+
+def generate_jwt_pair_for_user(user):
+    access_token = generate_access_token(user)
+    refresh_token = generate_refresh_token(user)
+    return access_token, refresh_token

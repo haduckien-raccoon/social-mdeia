@@ -6,6 +6,8 @@ from django.utils.deprecation import MiddlewareMixin
 from django.utils import timezone
 from apps.accounts.models import RefreshToken, User
 from apps.middleware.utils import generate_access_token
+from django.contrib.auth import login
+
 
 
 PUBLIC_PATHS = [
@@ -36,16 +38,16 @@ class JWTAuthMiddleware(MiddlewareMixin):
         if refresh and not access:
             return self._refresh_access_token(request, refresh)
 
-        # 🔴 Có access nhưng không có refresh → nghi leak
+        # ✅ Có access nhưng không có refresh check db xem refresh có còn hợp lệ ko để yên tâm
         if access and not refresh:
-            return redirect("/accounts/login/")
+            return self._authenticate_access(request, access)
 
         # ✅ Có đủ cả hai
-        return self._authenticate_access(request, access, refresh)
+        return self._authenticate_access(request, access, refresh, require_refresh=True)
 
     # ------------------------------------------------
 
-    def _authenticate_access(self, request, access, refresh):
+    def _authenticate_access(self, request, access, refresh=None, require_refresh=True):
         try:
             payload = jwt.decode(
                 access,
@@ -56,21 +58,26 @@ class JWTAuthMiddleware(MiddlewareMixin):
 
             user = User.objects.get(id=user_id)
 
-            # Check refresh còn tồn tại DB
-            if not RefreshToken.objects.filter(
-                user=user,
-                token=refresh,
-                is_revoked=False,
-                expires_at__gt=timezone.now()
-            ).exists():
-                return redirect("/accounts/login/")
+            # Nếu yêu cầu kiểm tra refresh, đảm bảo refresh hợp lệ trong DB
+            if require_refresh:
+                if not refresh:
+                    return redirect("/accounts/login/")
+                if not RefreshToken.objects.filter(
+                    user=user,
+                    token=refresh,
+                    is_revoked=False,
+                    expires_at__gt=timezone.now()
+                ).exists():
+                    return redirect("/accounts/login/")
 
             request.user = user
-            # request.is_authenticated = True
+            request._cached_user = user
             return None
 
         except jwt.ExpiredSignatureError:
-            return self._refresh_access_token(request, refresh)
+            if refresh:
+                return self._refresh_access_token(request, refresh)
+            return redirect("/accounts/login/")
         except Exception:
             return redirect("/accounts/login/")
 
@@ -88,7 +95,7 @@ class JWTAuthMiddleware(MiddlewareMixin):
             new_access = generate_access_token(user)
 
             request.user = user
-            # request.is_authenticated = True
+            request._cached_user = user
 
             response = redirect(request.path)
             response.set_cookie(
@@ -96,12 +103,6 @@ class JWTAuthMiddleware(MiddlewareMixin):
                 new_access,
                 httponly=True,
                 max_age=5 * 60,
-                samesite="Lax"
-            )
-            response.set_cookie(
-                "email",
-                user.email,
-                max_age=7 * 24 * 60 * 60,
                 samesite="Lax"
             )
             request.user = user

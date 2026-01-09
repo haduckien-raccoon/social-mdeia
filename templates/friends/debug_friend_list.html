@@ -1,0 +1,236 @@
+{% load friend_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Friends Debug - Facebook Style</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body {
+    font-family: 'Roboto', sans-serif;
+    background: #f0f2f5;
+    padding: 20px;
+    margin: 0;
+}
+.container {
+    max-width: 800px;
+    margin: auto;
+}
+h1 {
+    font-size: 26px;
+    margin-bottom: 20px;
+    color: #1877f2;
+}
+.section {
+    background: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.section-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 6px;
+}
+.user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.user-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    transition: 0.2s;
+    background: #fff;
+}
+.user-card:hover {
+    background: #f5f5f5;
+}
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #1877f2;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+}
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #fff;
+    transition: 0.2s;
+}
+.btn-send { background: #1877f2; }
+.btn-send:hover { background: #155db2; }
+.btn-cancel { background: #e4e6eb; color: #050505; }
+.btn-cancel:hover { background: #d8dadf; }
+.btn-accept { background: #42b72a; }
+.btn-accept:hover { background: #36a420; }
+.btn-reject { background: #f02849; }
+.btn-reject:hover { background: #d61c3c; }
+.btn-unfriend { background: #f5f6f7; color: #050505; }
+.btn-unfriend:hover { background: #e4e6eb; }
+.btn-disabled { background: #bdc3c7; cursor: not-allowed; color: #fff; }
+.alert { padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
+.alert-success { background: #42b72a; color: #fff; }
+.alert-error { background: #f02849; color: #fff; }
+.alert-info { background: #1877f2; color: #fff; }
+.alert-warning { background: #f5a623; color: #fff; }
+.empty-msg { color: #606770; font-style: italic; padding: 10px 0; }
+@media(max-width:600px){
+    .user-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .actions { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Friends Debug</h1>
+    <p>Logged in as: <strong>{{ user.username }} (ID: {{ user.id }})</strong></p>
+
+    {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-error{% elif message.tags == 'info' %}alert-info{% elif message.tags == 'warning' %}alert-warning{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+
+    <!-- Pending Friend Requests -->
+    <div class="section">
+        <h2 class="section-title"><i class="fa-solid fa-user-clock"></i> Pending Friend Requests</h2>
+        <div class="user-list">
+            {% for req in pending_requests %}
+            <div class="user-card">
+                <div class="user-info">
+                    <div class="avatar">{{ req.from_user.username|first|upper }}</div>
+                    <div>
+                        <strong>{{ req.from_user.username }}</strong><br>
+                        <small>{{ req.from_user.email }}</small>
+                    </div>
+                </div>
+                <div class="actions">
+                    <form method="post" action="{% url 'friends:accept_request' req.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-accept">Accept</button>
+                    </form>
+                    <form method="post" action="{% url 'friends:reject_request' req.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-reject">Reject</button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <p class="empty-msg">No pending requests.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Friend Suggestions -->
+    <div class="section">
+        <h2 class="section-title"><i class="fa-solid fa-user-plus"></i> Friend Suggestions</h2>
+        <div class="user-list">
+            {% for s in suggestions %}
+                {% friend_status user s as status %}
+                <div class="user-card">
+                    <div class="user-info">
+                        <div class="avatar">{{ s.username|first|upper }}</div>
+                        <div>{{ s.username }} (ID: {{ s.id }})</div>
+                    </div>
+                    <div class="actions">
+                        {% if status == "none" %}
+                            <form method="post" action="{% url 'friends:send_request' s.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-send">Add Friend</button>
+                            </form>
+                        {% elif status == "pending_sent" %}
+                            <form method="post" action="{% url 'friends:cancel_request' s.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-cancel">Cancel</button>
+                            </form>
+                        {% elif status == "pending_received" %}
+                            <button class="btn btn-disabled" disabled>Pending</button>
+                        {% elif status == "rejected" %}
+                            <form method="post" action="{% url 'friends:send_request' s.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-send">Send Again</button>
+                            </form>
+                        {% elif status == "accepted" %}
+                            <button class="btn btn-unfriend" disabled>Friend</button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+            <p class="empty-msg">No suggestions available.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- My Friends -->
+    <div class="section">
+        <h2 class="section-title"><i class="fa-solid fa-users"></i> My Friends ({{ friends|length }})</h2>
+        <div class="user-list">
+            {% for f in friends %}
+                {% friend_status user f as status %}
+                <div class="user-card">
+                    <div class="user-info">
+                        <div class="avatar">{{ f.username|first|upper }}</div>
+                        <div>{{ f.username }} (ID: {{ f.id }}) - {{ f.email }}</div>
+                    </div>
+                    <div class="actions">
+                        {% if status == "accepted" %}
+                            <form method="post" action="{% url 'friends:unfriend' f.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-unfriend" onclick="return confirm('Are you sure?')">Unfriend</button>
+                            </form>
+                        {% elif status == "pending_sent" %}
+                            <form method="post" action="{% url 'friends:cancel_request' f.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-cancel">Cancel</button>
+                            </form>
+                        {% elif status == "rejected" %}
+                            <form method="post" action="{% url 'friends:send_request' f.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-send">Send Again</button>
+                            </form>
+                        {% elif status == "none" %}
+                            <form method="post" action="{% url 'friends:send_request' f.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-send">Add Friend</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+            <p class="empty-msg">You have no friends.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

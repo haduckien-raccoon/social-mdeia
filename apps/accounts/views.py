@@ -1,21 +1,14 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.conf import settings
 import jwt
-
+from apps.middleware.utils import generate_jwt_pair_for_user
+from django.contrib import messages
 from .models import User, PasswordResetToken, EmailVerificationToken, UserProfile
-from .services import (
-    register_user,
-    login_user,
-    create_jwt_pair_for_user,
-    logout_user,
-    create_password_reset_token,
-    reset_user_password,
-    verify_email_token
-)
+from .services import *
 
 @csrf_exempt
 def register_view(request):
@@ -151,9 +144,47 @@ def verify_email_view(request):
     })
 
 #profile
-def profile_view(request):
+@csrf_exempt
+def profile_view(request, id=None):
+    # Lấy chính user từ token (như cũ)
     access_token = request.COOKIES.get("access")
+    if not access_token:
+        return redirect("login")
 
+    try:
+        payload = jwt.decode(
+            access_token,
+            settings.SECRET_KEY,
+            algorithms=["HS256"]
+        )
+        current_user_id = payload.get("user_id")
+        current_user = User.objects.get(id=current_user_id)
+        #ép kiểu id sang int
+        if id is not None:
+            id = int(id)
+        # Lấy user profile muốn xem
+        if id:
+            # Xem profile người khác
+            user = get_object_or_404(User, id=id)
+        else:
+            # Nếu không truyền username, xem profile chính mình
+            user = current_user
+
+        profile = get_object_or_404(UserProfile, user=user)
+
+        # Truyền current_user để template so sánh với user đang xem
+        return render(request, "accounts/profile.html", {
+            "user": user,  # profile đang xem
+            "profile": profile,
+            "current_user": current_user  # user đăng nhập
+        })
+
+    except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
+        return redirect("login")
+
+@csrf_exempt
+def edit_profile_view(request):
+    access_token = request.COOKIES.get("access")
     if not access_token:
         return redirect("login")
 
@@ -165,12 +196,37 @@ def profile_view(request):
         )
         user_id = payload.get("user_id")
         user = User.objects.get(id=user_id)
-        profile = UserProfile.objects.get(user=user)
+        profile = get_object_or_404(UserProfile, user=user)
 
-        return render(request, "accounts/profile.html", {
-            "user": user,
-            "profile": profile
-        })
+        if request.method == "GET":
+            return render(request, "accounts/edit_profile.html", {
+                "user": user,
+                "profile": profile
+            })
+
+        # POST: cập nhật profile
+        # 1. Cập nhật text fields
+        profile.full_name = request.POST.get("full_name", profile.full_name)
+        profile.bio = request.POST.get("bio", profile.bio)
+        profile.address = request.POST.get("address", profile.address)
+        profile.town = request.POST.get("town", profile.town)
+        profile.province = request.POST.get("province", profile.province)
+        profile.nationality = request.POST.get("nationality", profile.nationality)
+        profile.school = request.POST.get("school", profile.school)
+        profile.phone_number = request.POST.get("phone_number", profile.phone_number)
+        birth_day = request.POST.get("birth_day")
+        if birth_day:
+            profile.birth_day = birth_day  # Django tự parse date string "YYYY-MM-DD"
+
+        # 2. Cập nhật avatar nếu có upload
+        avatar = request.FILES.get("avatar")
+        if avatar:
+            profile.avatar = avatar
+
+        profile.updated_at = timezone.now()
+        profile.save()
+
+        return redirect("profile")
 
     except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
         return redirect("login")

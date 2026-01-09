@@ -193,15 +193,13 @@ def get_profile_by_user_id(user_id):
     except UserProfile.DoesNotExist:
         return None
 
-def update_user_profile(user, full_name=None, avatar=None, cover_image=None, bio=None):
+def update_user_profile(user, full_name=None, avatar=None, bio=None):
     profile, created = UserProfile.objects.get_or_create(user=user)
 
     if full_name is not None:
         profile.full_name = full_name
     if avatar is not None:
         profile.avatar = avatar
-    if cover_image is not None:
-        profile.cover_image = cover_image
     if bio is not None:
         profile.bio = bio
 

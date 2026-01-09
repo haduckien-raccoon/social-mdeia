@@ -27,6 +27,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("apps.core.urls")),
     path("accounts/", include("apps.accounts.urls")),
+    path('friends/', include('apps.friends.urls')),
 ] + [
     re_path(r"^images/(?P<path>.*)$", serve, {"document_root": settings.IMAGES_ROOT}),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

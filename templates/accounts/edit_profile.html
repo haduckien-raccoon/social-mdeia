@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit Profile - Instagram Style</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --gradient-start: #f58529;
+    --gradient-end: #dd2a7b;
+    --bg-light: #fafafa;
+    --text-dark: #262626;
+    --text-grey: #8e8e8e;
+    --border-color: #dbdbdb;
+    --btn-primary: #e1306c;
+}
+
+/* Reset */
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+html, body { height:100%; width:100%; overflow-x:hidden; background:var(--bg-light); }
+
+/* Layout chính */
+body { display:flex; min-height:100vh; }
+
+/* Sidebar icon */
+.icon-sidebar {
+    width:60px; background:linear-gradient(180deg,var(--gradient-start),var(--gradient-end));
+    display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:20px 0; flex-shrink:0;
+}
+.logo-circle { width:45px; height:45px; border-radius:50%; background:#fff; color:var(--btn-primary);
+    font-weight:bold; font-size:22px; display:flex; align-items:center; justify-content:center; margin-bottom:30px; font-family:serif; }
+.nav-icons { display:flex; flex-direction:column; gap:25px; flex-grow:1; margin-top:15px; }
+.nav-icon { color:#fff; font-size:22px; cursor:pointer; transition:0.3s; }
+.nav-icon:hover { opacity:0.7; }
+.settings-icon-bottom { background:var(--btn-primary); color:#fff; width:45px; height:45px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 6px rgba(0,0,0,0.15); }
+
+/* Sidebar menu */
+.menu-sidebar {
+    width:240px; background:#fff; padding:30px 20px; border-right:1px solid var(--border-color);
+    display:flex; flex-direction:column; flex-shrink:0;
+}
+.back-link { display:flex; align-items:center; color:var(--text-dark); text-decoration:none; font-weight:600; margin-bottom:25px; font-size:16px; }
+.back-link i { margin-right:8px; font-size:14px; }
+.menu-list { list-style:none; flex-grow:1; margin-top:10px; }
+.menu-item { margin-bottom:18px; display:flex; align-items:center; color:var(--text-grey); font-size:16px; cursor:pointer; transition:0.2s; }
+.menu-item i { margin-right:10px; width:18px; text-align:center; }
+.menu-item.active { color:var(--text-dark); font-weight:600; }
+.menu-item.active i { color:var(--text-dark); }
+
+/* Main content */
+.main-content {
+    flex:1; background:#fff; padding:30px 40px;
+    display:flex; flex-direction:column; align-items:center;
+    min-width:0; /* quan trọng để tránh tràn ngang */
+    overflow-y:auto; /* scroll dọc nếu content dài */
+    max-height:100vh;
+}
+
+/* Header */
+.header-area { width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:35px; flex-wrap:wrap; }
+.page-title { font-size:28px; font-weight:700; color:var(--text-dark); }
+.top-right-actions { display:flex; align-items:center; gap:18px; margin-top:10px; }
+.notification-bell { background:#efefef; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#555; cursor:pointer; font-size:16px; }
+.small-avatar { width:38px; height:38px; border-radius:50%; object-fit:cover; }
+
+/* Main avatar */
+.main-avatar-container { margin-bottom:25px; }
+.main-avatar { width:130px; height:130px; border-radius:50%; object-fit:cover; border:3px solid #fff; box-shadow:0 3px 12px rgba(0,0,0,0.15); }
+
+/* Form */
+.profile-form { display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:850px; width:100%; }
+.form-group { display:flex; flex-direction:column; }
+.full-width { grid-column:span 2; }
+label { font-size:15px; font-weight:500; color:var(--text-dark); margin-bottom:6px; }
+input, select { width:100%; padding:10px 14px; border:1px solid var(--border-color); border-radius:6px; font-size:14px; color:var(--text-dark); outline:none; transition:border-color 0.3s; }
+input:focus, select:focus { border-color:var(--btn-primary); }
+
+/* Buttons */
+.btn-group { margin-top:20px; display:flex; gap:15px; flex-wrap:wrap; }
+.btn { padding:10px 30px; font-size:14px; border-radius:6px; cursor:pointer; font-weight:500; transition:0.3s; text-align:center; }
+.btn-cancel { background:white; border:1px solid var(--btn-primary); color:var(--btn-primary); display:flex; align-items:center; justify-content:center; text-decoration:none; }
+.btn-cancel:hover { background:#ffe6f0; }
+.btn-save { background:var(--btn-primary); border:1px solid var(--btn-primary); color:white; }
+.btn-save:hover { background:#c2185b; }
+
+/* Responsive */
+@media (max-width:1024px) {
+    .menu-sidebar { width:200px; padding:25px 15px; }
+    .main-content { padding:25px; }
+    .main-avatar { width:120px; height:120px; }
+}
+@media (max-width:768px) {
+    body { flex-direction:column; }
+    .icon-sidebar, .menu-sidebar { width:100%; flex-direction:row; padding:12px; justify-content:space-between; border-right:none; border-bottom:1px solid var(--border-color); }
+    .profile-form { grid-template-columns:1fr; }
+    .full-width { grid-column:span 1; }
+    .main-avatar { width:100px; height:100px; }
+    .header-area { flex-direction:column; align-items:flex-start; gap:15px; }
+}
+</style>
+</head>
+<body>
+
+<aside class="icon-sidebar">
+    <div class="logo-circle">SD</div>
+    <div class="nav-icons">
+        <i class="fa-solid fa-house nav-icon"></i>
+        <i class="fa-regular fa-bell nav-icon"></i>
+        <i class="fa-regular fa-calendar nav-icon"></i>
+        <i class="fa-solid fa-chart-line nav-icon"></i>
+        <i class="fa-regular fa-user nav-icon"></i>
+    </div>
+    <div class="settings-icon-bottom">
+        <i class="fa-solid fa-gear"></i>
+    </div>
+</aside>
+
+<aside class="menu-sidebar">
+    <a href="{% url 'profile' %}" class="back-link"><i class="fa-solid fa-chevron-left"></i> My Profile</a>
+    <h2 style="margin-bottom:15px; font-size:18px;">Edit profile</h2>
+    <ul class="menu-list">
+        <li class="menu-item active"><i class="fa-solid fa-pen"></i> Edit profile</li>
+        <li class="menu-item"><i class="fa-regular fa-bell"></i> Notification</li>
+        <li class="menu-item"><i class="fa-solid fa-lock"></i> Update Email</li>
+        <li class="menu-item"><i class="fa-solid fa-gear"></i> Update Password</li>
+        <li class="menu-item"><i class="fa-regular fa-circle-question"></i> Appearance</li>
+    </ul>
+</aside>
+
+<main class="main-content">
+    <div class="header-area">
+        <h1 class="page-title">Edit profile</h1>
+        <div class="top-right-actions">
+            <div class="notification-bell"><i class="fa-regular fa-bell"></i></div>
+            <img src="{{ profile.avatar.url }}" alt="Small Profile" class="small-avatar">
+        </div>
+    </div>
+
+    <div class="main-avatar-container">
+        <img src="{{ profile.avatar.url }}" alt="Main Profile" class="main-avatar">
+    </div>
+
+    <form class="profile-form" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" name="full_name" value="{{ profile.full_name }}">
+        </div>
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" value="{{ user.username }}" readonly>
+        </div>
+        <div class="form-group full-width">
+            <label>Email</label>
+            <input type="email" value="{{ user.email }}" readonly>
+        </div>
+        <div class="form-group full-width">
+            <label>Bio</label>
+            <input type="text" name="bio" value="{{ profile.bio }}">
+        </div>
+        <div class="form-group">
+            <label>Address</label>
+            <input type="text" name="address" value="{{ profile.address }}">
+        </div>
+        <div class="form-group"><label>Town</label><input type="text" name="town" value="{{ profile.town }}"></div>
+        <div class="form-group"><label>Province</label><input type="text" name="province" value="{{ profile.province }}"></div>
+        <div class="form-group"><label>Country</label><input type="text" name="nationality" value="{{ profile.nationality }}"></div>
+        <div class="form-group"><label>School</label><input type="text" name="school" value="{{ profile.school }}"></div>
+        <div class="form-group"><label>Phone Number</label><input type="text" name="phone_number" value="{{ profile.phone_number }}"></div>
+        <div class="form-group"><label>Birth Day</label><input type="date" name="birth_day" value="{{ profile.birth_day }}"></div>
+        <div class="form-group"><label>Avatar</label><input type="file" name="avatar" accept="image/*"></div>
+
+        <div class="btn-group">
+            <a href="{% url 'profile' %}" class="btn btn-cancel">Cancel</a>
+            <button type="submit" class="btn btn-save">Save</button>
+        </div>
+    </form>
+</main>
+
+<script>
+const menuItems = document.querySelectorAll('.menu-item');
+menuItems.forEach(item => {
+    item.addEventListener('click', function() {
+        document.querySelector('.menu-item.active').classList.remove('active');
+        this.classList.add('active');
+    });
+});
+</script>
+
+</body>
+</html>

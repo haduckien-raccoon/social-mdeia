@@ -28,3 +28,4 @@ _________________________________________
 # Run app:
 - uvicorn config.asgi:application --host 127.0.0.1 --port 8080
 >>>>>>> 61a11d7 (fix: load image)
+        

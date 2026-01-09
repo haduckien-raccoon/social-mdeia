@@ -62,11 +62,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     full_name = models.CharField(max_length=255, blank=True, null=True)
-    address = models.CharField(max_length=255, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)   
+    town = models.CharField(max_length=255, blank=True, null=True)
+    province = models.CharField(max_length=255, blank=True, null=True)
+    nationality = models.CharField(max_length=100, blank=True, null=True)
+    school = models.CharField(max_length=255, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     birth_day = models.DateField(blank=True, null=True)
     avatar = models.ImageField(upload_to="avatars/", default="avatars/normal.jpg", blank=True, null=True)
-    cover_image = models.ImageField(upload_to="covers/", blank=True, null=True)
     bio = models.TextField(blank=True, null=True, max_length=500)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
@@ -74,6 +77,10 @@ class UserProfile(models.Model):
         return [
             ("Full Name", self.full_name),
             ("Address", self.address),
+            ("Town", self.town),
+            ("Province", self.province),
+            ("Nationality", self.nationality),
+            ("School", self.school),
             ("Phone Number", self.phone_number),
             ("Birth Day", self.birth_day),
             ("Bio", self.bio),
