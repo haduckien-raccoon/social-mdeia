@@ -1,5 +1,6 @@
-pip install django>=3.2
-pip install PyMySQL python-dotenv
-pip install djangorestframework
-pip install PyJWT
-pip install Pillow
+django>=3.2
+PyMySQL
+python-dotenv
+djangorestframework
+PyJWT
+Pillow

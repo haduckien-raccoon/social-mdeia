@@ -15,3 +15,10 @@
 
 # Run app: 
 - python manage.py runserver
+
+_________________________________________
+
+# Windowns
+-----------------------------------------------------
+## Cài đặt mysqlclient
+```conda install -c conda-forge mysqlclient```
