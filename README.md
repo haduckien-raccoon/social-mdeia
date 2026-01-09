@@ -22,3 +22,4 @@ _________________________________________
 -----------------------------------------------------
 ## Cài đặt mysqlclient
 ```conda install -c conda-forge mysqlclient```
+```python manage.py runserver 8080```
