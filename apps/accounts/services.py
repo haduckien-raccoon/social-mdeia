@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils import timezone
 from datetime import timedelta
 from django.core.mail import send_mail
-from .models import User, EmailVerificationToken
+from .models import User, EmailVerificationToken, UserProfile
 from django.conf import settings
 
 JWT_SECRET = settings.SECRET_KEY
@@ -107,6 +107,9 @@ def verify_email_token(token_value):
         token.user.is_active = True
         token.user.save()
         user = token.user
+        # Tạo profile mặc định nếu chưa có
+        if not hasattr(user, 'userprofile'):
+            UserProfile.objects.create(user=user)
     except Exception as e:
         print(f"[ERROR] Lỗi khi cập nhật token/user: {e}")
         return False, "Đã xảy ra lỗi khi xác thực email."

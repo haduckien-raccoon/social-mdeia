@@ -12,15 +12,17 @@ PUBLIC_PATHS = [
     "/accounts/login/",
     "/accounts/register/",
     "/accounts/verify-email/",
+    "/accounts/verify-email",
     "/accounts/forgot-password/",
     "/accounts/reset-password/",
+    "/accounts/reset-password",
     "/admin"
 ]
 
 class JWTAuthMiddleware(MiddlewareMixin):
     def process_request(self, request):
         # Bỏ qua route public
-        if request.path in PUBLIC_PATHS:
+        if any(request.path.startswith(p) for p in PUBLIC_PATHS):
             return None
 
         access = request.COOKIES.get("access")
