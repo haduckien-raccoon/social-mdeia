@@ -14,6 +14,7 @@ PUBLIC_PATHS = [
     "/accounts/verify-email/",
     "/accounts/forgot-password/",
     "/accounts/reset-password/",
+    "/admin"
 ]
 
 class JWTAuthMiddleware(MiddlewareMixin):

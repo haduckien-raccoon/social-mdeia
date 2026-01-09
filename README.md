@@ -6,5 +6,12 @@
 # Install Version:
 - pip install mysqlclient>=2.2.1
 -----------------------------------------------------------------------
+# Create Migrations:
+- python manage.py makemigrations
+------------------------------------------------------------------------
+# Apply Migrations:
+- python manage.py migrate
+------------------------------------------------------------------------
+
 # Run app: 
 - python manage.py runserver
