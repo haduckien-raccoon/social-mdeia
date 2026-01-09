@@ -1,108 +1,164 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
 from django.utils import timezone
-from django.contrib.auth import authenticate
-from .models import User, EmailVerificationToken, RefreshToken, PasswordResetToken
-from .serializers import RegisterSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
-from .services import create_jwt_pair_for_user, create_password_reset_token
-from datetime import timedelta
+from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.conf import settings
-from django.shortcuts import render, redirect
 
-# Register + Email verification
-# accounts/views.py
-from .services import register_user
+from .models import User, PasswordResetToken
+from .services import (
+    register_user,
+    login_user,
+    create_jwt_pair_for_user,
+    logout_user,
+    create_password_reset_token,
+    reset_user_password,
+)
 
-class RegisterView(APIView):
-    def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            username = serializer.validated_data['username']
-            email = serializer.validated_data['email']
-            password = serializer.validated_data['password']
+@csrf_exempt
+def register_view(request):
+    if request.method == "GET":
+        return render(request, "accounts/register.html")
 
-            user, error = register_user(username, email, password)
-            print(f"[DEBUG] Ket qua dang ky: User={user}, Error={error}")
-            if error:
-                return Response({'error': error}, status=400)
+    username = request.POST.get("username")
+    email = request.POST.get("email")
+    password = request.POST.get("password")
 
-            return Response({'message': 'User registered. Check email to verify.'}, status=201)
-        else:
-            # Check the type of serializer.errors
-            if isinstance(serializer.errors, dict):
-                error = str(list(serializer.errors.values()))
-            else:
-                # Handle the custom object
-                error = str(serializer.errors.get('message', 'Unknown error'))
-            print(f"[DEBUG] Loi serializer (string): {error}")
-            return Response({'error': serializer.errors}, status=400)
+    user, error = register_user(username, email, password)
 
-# Login
-class LoginView(APIView):
-    def post(self, request):
-        email = request.data.get('email')
-        password = request.data.get('password')
-        print(f"[DEBUG] Dang nhap voi email: {email}, mat khau: {password}")
+    if error:
+        return render(request, "accounts/register.html", {
+            "error": error
+        })
 
-        # Sử dụng đúng tên field với USERNAME_FIELD
-        user = authenticate(request, username=email, password=password)
+    return render(request, "accounts/register.html", {
+        "message": f"User: {username} registered. Check email: {email} to verify."
+    })
 
-        if not user:
-            return Response({'error': 'Invalid credentials'}, status=401)
-        if not user.is_active:
-            return Response({'error': 'Email not verified'}, status=401)
+#login
+@csrf_exempt
+def login_view(request):
+    if request.method == "GET":
+        return render(request, "accounts/login.html")
 
-        access_token, refresh_token = create_jwt_pair_for_user(user)
-        response = Response({'message': 'Login successful'})
-        response.set_cookie('access', access_token, httponly=True, max_age=900)
-        response.set_cookie('refresh', refresh_token, httponly=True, max_age=604800)
-        return response
+    email = request.POST.get("email")
+    password = request.POST.get("password")
 
+    user, error = login_user(email, password)
+
+    if not user:
+        return render(request, "accounts/login.html", {
+            "error": error or "Invalid credentials"
+        })
+
+    access_token, refresh_token = create_jwt_pair_for_user(user)
+
+    response = redirect("home")  # đổi thành URL name của bạn
+    response.set_cookie("access", access_token, httponly=True, max_age=15 * 60)
+    response.set_cookie("refresh", refresh_token, httponly=True, max_age=7 * 24 * 60 * 60)
+
+    return response
 
 # Logout
-class LogoutView(APIView):
-    def post(self, request):
-        response = Response({'message': 'Logged out'})
-        response.delete_cookie('access')
-        response.delete_cookie('refresh')
-        return response
+@csrf_exempt
+def logout_view(request):
+    refresh_token = request.COOKIES.get("refresh")
+
+    if refresh_token:
+        logout_user(refresh_token)
+
+    response = redirect("login")
+    response.delete_cookie("access")
+    response.delete_cookie("refresh")
+    return response
 
 # Forgot password
-class ForgotPasswordView(APIView):
-    def post(self, request):
-        serializer = ForgotPasswordSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data['email']
-            try:
-                user = User.objects.get(email=email)
-            except User.DoesNotExist:
-                return Response({'message': 'If email exists, reset link sent'}, status=200)
-            token = create_password_reset_token(user)
-            reset_url = f"http://127.0.0.1:8080/accounts/api/reset-password/?token={token.token}"
-            send_mail('Reset password', f'Click: {reset_url}', settings.EMAIL_HOST_USER, [user.email])
-            return Response({'message': 'Password reset link sent to email'}, status=200)
-        return Response(serializer.errors, status=400)
+@csrf_exempt
+def forgot_password_view(request):
+    if request.method == "GET":
+        return render(request, "accounts/forgot_password.html")
+
+    email = request.POST.get("email")
+
+    try:
+        user = User.objects.get(email=email)
+        token = create_password_reset_token(user)
+
+        reset_url = f"http://127.0.0.1:8080/accounts/reset-password/?token={token.token}"
+        send_mail(
+            "Reset password",
+            f"Click here: {reset_url}",
+            settings.EMAIL_HOST_USER,
+            [user.email],
+        )
+    except User.DoesNotExist:
+        pass  # không leak thông tin email
+
+    return render(request, "accounts/forgot_password.html", {
+        "message": f"If email: {email} exists, reset link has been sent."
+    })
+
 
 # Reset password
-class ResetPasswordView(APIView):
-    def post(self, request):
-        serializer = ResetPasswordSerializer(data=request.data)
-        if serializer.is_valid():
-            token_value = serializer.validated_data['token']
-            password = serializer.validated_data['password']
-            try:
-                token = PasswordResetToken.objects.get(token=token_value, is_used=False)
-            except PasswordResetToken.DoesNotExist:
-                return Response({'error': 'Invalid or used token'}, status=400)
-            if token.expires_at < timezone.now():
-                return Response({'error': 'Token expired'}, status=400)
-            user = token.user
-            user.set_password(password)
-            user.save()
-            token.is_used = True
-            token.save()
-            return Response({'message': 'Password reset successful'})
-        return Response(serializer.errors, status=400)
+@csrf_exempt
+def reset_password_view(request):
+    if request.method == "GET":
+        token = request.GET.get("token")
+        return render(request, "accounts/reset_password.html", {
+            "token": token
+        })
 
+    token_value = request.POST.get("token")
+    new_password = request.POST.get("password")
+
+    success, message = reset_user_password(token_value, new_password)
+
+    if not success:
+        return render(request, "accounts/reset_password.html", {
+            "error": message,
+            "token": token_value
+        })
+
+    return render(request, "accounts/reset_password_success.html", {
+        "message": message
+    })
+
+# Email verification
+from django.shortcuts import render, redirect
+from django.utils import timezone
+from .models import EmailVerificationToken
+
+@csrf_exempt
+def verify_email_view(request):
+    token_value = request.GET.get("token")
+
+    if not token_value:
+        return render(request, "accounts/verify_email.html", {
+            "error": "Invalid verification link."
+        })
+
+    try:
+        token = EmailVerificationToken.objects.get(
+            token=token_value,
+            is_used=False
+        )
+    except EmailVerificationToken.DoesNotExist:
+        return render(request, "accounts/verify_email.html", {
+            "error": "Token is invalid or already used."
+        })
+
+    if token.expires_at < timezone.now():
+        return render(request, "accounts/verify_email.html", {
+            "error": "Verification token has expired."
+        })
+    
+    user = token.user
+    user.is_active = True
+    user.save()
+
+    token.is_used = True
+    token.save()
+
+    return render(request, "accounts/verify_email.html", {
+        "message": "Email verified successfully. You can login now."
+    })

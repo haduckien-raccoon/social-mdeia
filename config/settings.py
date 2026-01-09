@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.chat",
     "apps.notifications",
     "apps.moderation",
+    "apps.middleware",
 ]
 
 # ---------------------------
@@ -49,6 +50,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "apps.middleware.jwt_auth.JWTAuthMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
