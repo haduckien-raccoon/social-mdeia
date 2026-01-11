@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Edit Profile</title>
+<title>Update Email - Instagram Style</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -55,7 +55,7 @@ body { display:flex; min-height:100vh; }
 
 /* Main content */
 .main-content {
-    flex:1; background:#fff; padding:10px 40px;
+    flex:1; background:#fff; padding:30px 40px;
     display:flex; flex-direction:column; align-items:center;
     min-width:0;
     overflow-y:auto;
@@ -74,22 +74,23 @@ body { display:flex; min-height:100vh; }
 .main-avatar-container { margin-bottom:25px; }
 .main-avatar { width:130px; height:130px; border-radius:50%; object-fit:cover; border:3px solid #fff; box-shadow:var(--shadow); }
 
-/* Form */
-.profile-form { display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:850px; width:100%; }
-.form-group { display:flex; flex-direction:column; }
-.full-width { grid-column:span 2; }
-label { font-size:15px; font-weight:500; color:var(--text-dark); margin-bottom:6px; }
-input, select { width:100%; padding:12px 14px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; color:var(--text-dark); outline:none; transition:border-color 0.3s; }
-input:focus, select:focus { border-color:var(--btn-primary); box-shadow:0 0 0 2px rgba(225, 48, 108, 0.2); }
-input[readonly] { background-color:#f8f9fa; cursor:not-allowed; }
+/* Special form for email only */
+.special-form { display:flex; flex-direction:column; width:100%; max-width:600px; margin-top:20px; }
+.form-section { background:#fff; padding:30px; border-radius:10px; margin-bottom:20px; border:1px solid var(--border-color); box-shadow:var(--shadow); }
+.form-section h3 { margin-bottom:15px; color:var(--text-dark); font-size:20px; font-weight:600; }
+.form-section p { color:var(--text-grey); margin-bottom:20px; font-size:14px; line-height:1.5; }
+.form-row { display:flex; flex-direction:column; margin-bottom:20px; }
+.form-row label { font-size:15px; font-weight:500; margin-bottom:8px; color:var(--text-dark); }
+.form-row input { width:100%; padding:12px 15px; border:1px solid var(--border-color); border-radius:8px; font-size:14px; transition:all 0.3s; }
+.form-row input:focus { border-color:var(--btn-primary); box-shadow:0 0 0 2px rgba(225, 48, 108, 0.2); outline:none; }
+.form-actions { display:flex; gap:12px; margin-top:15px; }
+.btn-email { background:linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); color:white; padding:12px 25px; border:none; border-radius:8px; cursor:pointer; font-weight:500; font-size:15px; transition:all 0.3s; box-shadow:var(--shadow); }
+.btn-email:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(225, 48, 108, 0.3); }
+.btn-cancel { background:white; color:var(--text-dark); padding:12px 25px; border:1px solid var(--border-color); border-radius:8px; cursor:pointer; font-weight:500; font-size:15px; transition:all 0.3s; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+.btn-cancel:hover { background:#f8f9fa; border-color:#c5c5c5; }
 
-/* Buttons */
-.btn-group { margin-top:20px; display:flex; gap:15px; flex-wrap:wrap; }
-.btn { padding:12px 30px; font-size:14px; border-radius:8px; cursor:pointer; font-weight:500; transition:0.3s; text-align:center; border:1px solid transparent; }
-.btn-cancel { background:white; border:1px solid var(--border-color); color:var(--text-dark); display:flex; align-items:center; justify-content:center; text-decoration:none; }
-.btn-cancel:hover { background:#f8f9fa; }
-.btn-save { background:linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); border:1px solid var(--btn-primary); color:white; box-shadow:var(--shadow); }
-.btn-save:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(225, 48, 108, 0.3); }
+/* Messages */
+.messages { margin-bottom:15px; padding:10px; border-radius:6px; background-color:#d4edda; color:#155724; border:1px solid #c3e6cb; }
 
 /* Responsive */
 @media (max-width:1024px) {
@@ -100,10 +101,13 @@ input[readonly] { background-color:#f8f9fa; cursor:not-allowed; }
 @media (max-width:768px) {
     body { flex-direction:column; }
     .icon-sidebar, .menu-sidebar { width:100%; flex-direction:row; padding:12px; justify-content:space-between; border-right:none; border-bottom:1px solid var(--border-color); }
-    .profile-form { grid-template-columns:1fr; }
-    .full-width { grid-column:span 1; }
+    .main-content { padding:25px; }
     .main-avatar { width:100px; height:100px; }
     .header-area { flex-direction:column; align-items:flex-start; gap:15px; }
+    .special-form { padding:0 10px; }
+    .form-section { padding:20px; }
+    .form-actions { flex-direction:column; }
+    .btn-email, .btn-cancel { width:100%; }
 }
 </style>
 </head>
@@ -127,9 +131,9 @@ input[readonly] { background-color:#f8f9fa; cursor:not-allowed; }
     <a href="{% url 'profile' %}" class="back-link"><i class="fa-solid fa-chevron-left"></i> My Profile</a>
     <h2 style="margin-bottom:15px; font-size:18px;">Edit profile</h2>
     <ul class="menu-list">
-        <li class="menu-item active"><i class="fa-solid fa-pen"></i> Edit profile</li>
+        <li class="menu-item" onclick="location.href='{% url 'edit_profile' %}'"><i class="fa-solid fa-pen"></i> Edit profile</li>
         <li class="menu-item" onclick="location.href='/notifications'"><i class="fa-regular fa-bell"></i> Notification</li>
-        <li class="menu-item" onclick="location.href='{% url 'update_email' %}'"><i class="fa-solid fa-envelope"></i> Update Email</li>
+        <li class="menu-item active"><i class="fa-solid fa-envelope"></i> Update Email</li>
         <li class="menu-item" onclick="location.href='{% url 'update_username' %}'"><i class="fa-solid fa-at"></i> Update Username</li>
         <li class="menu-item" onclick="location.href='{% url 'update_password' %}'"><i class="fa-solid fa-key"></i> Update Password</li>
         <li class="menu-item"><i class="fa-solid fa-gear"></i> Appearance</li>
@@ -139,10 +143,10 @@ input[readonly] { background-color:#f8f9fa; cursor:not-allowed; }
 
 <main class="main-content">
     <div class="header-area">
-        <h1 class="page-title">Edit profile</h1>
+        <h1 class="page-title">Update Email Address</h1>
         <div class="top-right-actions">
             <div class="notification-bell"><i class="fa-regular fa-bell"></i></div>
-            <img src="{{ profile.avatar.url }}" alt="Small Profile" class="small-avatar">
+            <img src="{{ profile.avatar.url }}" class="small-avatar">
         </div>
     </div>
 
@@ -150,47 +154,50 @@ input[readonly] { background-color:#f8f9fa; cursor:not-allowed; }
         <img src="{{ profile.avatar.url }}" alt="Main Profile" class="main-avatar">
     </div>
 
-    <form class="profile-form" method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="form-group">
-            <label>Full Name</label>
-            <input type="text" name="full_name" value="{{ profile.full_name }}">
-        </div>
-        <div class="form-group">
-            <label>Username</label>
-            <input type="text" value="{{ user.username }}" readonly>
-        </div>
-        <div class="form-group full-width">
-            <label>Email</label>
-            <input type="email" value="{{ user.email }}" readonly>
-        </div>
-        <div class="form-group full-width">
-            <label>Bio</label>
-            <input type="text" name="bio" value="{{ profile.bio }}">
-        </div>
-        <div class="form-group">
-            <label>Address</label>
-            <input type="text" name="address" value="{{ profile.address }}">
-        </div>
-        <div class="form-group"><label>Town</label><input type="text" name="town" value="{{ profile.town }}"></div>
-        <div class="form-group"><label>Province</label><input type="text" name="province" value="{{ profile.province }}"></div>
-        <div class="form-group"><label>Country</label><input type="text" name="nationality" value="{{ profile.nationality }}"></div>
-        <div class="form-group"><label>School</label><input type="text" name="school" value="{{ profile.school }}"></div>
-        <div class="form-group"><label>Phone Number</label><input type="text" name="phone_number" value="{{ profile.phone_number }}"></div>
-        <div class="form-group"><label>Birth Day</label><input type="date" name="birth_day" value="{{ profile.birth_day|date:'Y-m-d' }}"></div>
-        <div class="form-group"><label>Avatar</label><input type="file" name="avatar" accept="image/*"></div>
+    <!-- Email Update Form Only -->
+    <div class="special-form">
+        <form method="POST">
+            {% csrf_token %}
 
-        <div class="btn-group">
-            <a href="{% url 'profile' %}" class="btn btn-cancel">
-                <i class="fa-solid fa-times" style="margin-right:8px;"></i>
-                Cancel
-            </a>
-            <button type="submit" class="btn btn-save">
-                <i class="fa-solid fa-check" style="margin-right:8px;"></i>
-                Save
-            </button>
-        </div>
-    </form>
+            <div class="form-section">
+                <h3>Change Email Address</h3>
+                <p>
+                    Enter your new email address. You will be logged out after changing your email for security reasons.
+                </p>
+
+                {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                            <p>{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="form-row">
+                    <label for="new_email">New Email Address</label>
+                    <input
+                        type="email"
+                        id="new_email"
+                        name="new_email"
+                        value="{{ user.email }}"
+                        placeholder="Enter your new email address"
+                        required
+                    >
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-email">
+                        <i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i>
+                        Change Email & Logout
+                    </button>
+                    <a href="{% url 'profile' %}" class="btn-cancel">
+                        <i class="fa-solid fa-times" style="margin-right:8px;"></i>
+                        Cancel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
 </main>
 
 <script>

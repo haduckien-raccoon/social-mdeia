@@ -3,468 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Desktop UI</title>
+    <title>{{ user.username }} • Instagram Photos</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
 
     <style>
-        /* -------------------- CÀI ĐẶT CHUNG -------------------- */
         :root {
-            --bg-color: #fafafa;
-            --white: #ffffff;
-            --text-black: #262626;
+            --bg-body: #fafafa;
+            --bg-white: #ffffff;
+            --text-main: #262626;
             --text-grey: #8e8e8e;
             --border-color: #dbdbdb;
-            --link-blue: #00376b;
-            --btn-bg: #efefef;
+            --btn-grey-bg: #efefef;
+            --btn-grey-hover: #dbdbdb;
+            --btn-blue-bg: #0095f6;
+            --btn-blue-hover: #1877f2;
+            --sidebar-width: 245px;
+            --content-width: 935px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            background-color: var(--bg-color);
-            color: var(--text-black);
-            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            overflow-y: scroll;
         }
 
-        a {
-            text-decoration: none;
-            color: inherit;
-        }
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+        button { border: none; cursor: pointer; font-family: inherit; }
 
-        button {
-            cursor: pointer;
-        }
-
-        /* -------------------- NAVBAR -------------------- */
-        .navbar {
-            background-color: var(--white);
-            border-bottom: 1px solid var(--border-color);
+        /* --- 1. SIDEBAR CỐ ĐỊNH --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
             position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 100;
-            height: 60px;
+            top: 0; left: 0;
+            border-right: 1px solid var(--border-color);
+            background: var(--bg-white);
+            padding: 20px 12px 20px 24px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .nav-content {
-            width: 100%;
-            max-width: 935px;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            z-index: 10;
         }
 
         .logo {
-            font-size: 24px;
-            font-weight: bold;
-            font-family: 'Cursive', serif;
+            font-family: 'Grand Hotel', cursive;
+            font-size: 29px;
+            margin-bottom: 30px;
+            padding-left: 12px;
+            padding-top: 25px;
+            display: block;
         }
 
-        .search-wrapper {
-            background: #efefef;
-            border-radius: 8px;
-            padding: 8px 12px;
-            width: 250px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        
+        .nav-item {
+            display: flex; align-items: center; gap: 16px;
+            padding: 12px; border-radius: 8px;
+            transition: background 0.2s; cursor: pointer;
+        }
+        .nav-item:hover { background-color: #f2f2f2; }
+        .nav-item i { font-size: 24px; width: 24px; }
+        .nav-item span { font-size: 16px; }
+        .nav-item.active span { font-weight: 700; }
+
+        /* --- 2. MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width); /* Chừa chỗ cho sidebar */
+            display: flex; flex-direction: column; align-items: center;
+            padding: 30px 20px 0;
         }
 
-        .search-wrapper i {
-            color: var(--text-grey);
-            font-size: 14px;
-        }
+        .container { width: 100%; max-width: var(--content-width); }
 
-        .search-input {
-            border: none;
-            outline: none;
-            background: transparent;
-            font-size: 14px;
-            width: 100%;
-            color: var(--text-black);
-        }
-
-        .search-input::placeholder {
-            color: var(--text-grey);
-        }
-
-        .nav-icons {
-            display: flex;
-            gap: 22px;
-            font-size: 22px;
-        }
-
-        /* -------------------- CONTAINER -------------------- */
-        .container {
-            max-width: 935px;
-            margin: 90px auto 30px;
-            padding: 0 20px;
-        }
-
-        /* -------------------- PROFILE HEADER -------------------- */
+        /* --- PROFILE HEADER --- */
         .profile-header {
-            display: flex;
-            margin-bottom: 44px;
+            display: flex; margin-bottom: 44px;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 44px;
         }
 
-        .profile-img-container {
-            flex: 0 0 160px;
-            display: flex;
-            justify-content: center;
-            margin-right: 30px;
+        .header-img-col {
+            flex: 0 0 290px; display: flex; justify-content: center; margin-right: 30px;
         }
-
-        .gradient-ring {
-            width: 160px;
-            height: 160px;
-            border-radius: 50%;
+        
+        .avatar-ring {
+            width: 150px; height: 150px; border-radius: 50%;
             background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 3px; cursor: pointer;
+        }
+        
+        .avatar-img {
+            width: 100%; height: 100%; border-radius: 50%;
+            border: 3px solid var(--bg-white); object-fit: cover; background: #eee;
         }
 
-        .gradient-ring img {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            border: 4px solid #fff;
-            object-fit: cover;
-        }
+        .header-info-col { flex: 1; display: flex; flex-direction: column; gap: 20px; }
 
-        .profile-info {
-            flex: 1;
-        }
-
-        .row-1 {
-            display: flex;
-            align-items: center;
-            margin-bottom: 12px;
-            gap: 12px;
-        }
-
-        .username {
-            font-size: 28px;
-            font-weight: 300;
-            cursor: pointer;
-        }
-
-        .btns-container {
-            display: flex;
-            gap: 8px;
-        }
+        /* Row 1: User & Buttons */
+        .info-row-1 { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .username-text { font-size: 20px; font-weight: 400; cursor: pointer; }
+        .username-text:hover { opacity: 0.7; }
 
         .btn {
-            background-color: var(--btn-bg);
-            border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
+            padding: 7px 16px; border-radius: 8px; font-weight: 600; font-size: 14px;
         }
+        .btn-grey { background: var(--btn-grey-bg); color: var(--text-main); }
+        .btn-grey:hover { background: var(--btn-grey-hover); }
+        
+        .btn-blue { background: var(--btn-blue-bg); color: #fff; }
+        .btn-blue:hover { background: var(--btn-blue-hover); }
 
-        .row-2 {
-            display: flex;
-            margin-bottom: 12px;
-            font-size: 16px;
-        }
+        /* Row 2: Stats */
+        .info-row-2 { display: flex; gap: 40px; font-size: 16px; }
+        .stat strong { font-weight: 600; }
 
-        .stat-item {
-            margin-right: 30px;
-        }
+        /* Row 3: Bio */
+        .info-row-3 { font-size: 14px; line-height: 1.5; }
+        .fullname { font-weight: 600; display: block; }
 
-        .stat-item span {
-            font-weight: bold;
-        }
-
-        .row-3 {
-            font-size: 16px;
-            line-height: 1.5;
-        }
-
-        .bio-link {
-            color: var(--link-blue);
-            font-weight: 600;
-        }
-
-        /* -------------------- TABS -------------------- */
+        /* --- TABS --- */
         .tabs {
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: center;
-            gap: 60px;
-            margin-bottom: 20px;
-        }
-
-        .tab-item {
-            padding-top: 15px;
-            color: var(--text-grey);
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            display: flex; justify-content: center; gap: 60px;
             border-top: 1px solid transparent;
         }
-
-        .tab-item.active {
-            color: var(--text-black);
-            border-top: 1px solid var(--text-black);
+        .tab {
+            padding: 15px 0; color: var(--text-grey); font-size: 12px; font-weight: 600;
+            letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+            border-top: 1px solid transparent; margin-top: -1px;
         }
+        .tab.active { color: var(--text-main); border-top: 1px solid var(--text-main); }
 
-        /* -------------------- GALLERY -------------------- */
+        /* --- GALLERY --- */
         .gallery {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 28px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding-bottom: 50px;
         }
-
         .gallery-item {
-            background-color: #efefef;
-            aspect-ratio: 1 / 1;
+            position: relative; aspect-ratio: 1/1; background: #efefef; cursor: pointer; group;
         }
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center; gap: 20px;
+            color: #fff; opacity: 0; transition: 0.2s; font-weight: bold; font-size: 16px;
+        }
+        .gallery-item:hover .overlay { opacity: 1; }
 
-        /* -------------------- MODAL POPUP -------------------- */
+        /* --- MODAL --- */
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 200;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5);
+            display: none; position: fixed; z-index: 100; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.65);
         }
-
         .modal-content {
-            background-color: #fff;
-            margin: 8% auto;
-            padding: 20px;
-            border-radius: 16px;
-            max-width: 450px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            animation: fadeIn 0.3s ease-out;
+            background-color: #fff; margin: 10% auto; border-radius: 12px;
+            width: 400px; overflow: hidden; animation: zoomIn 0.2s ease-out;
         }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
         .modal-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 12px;
-            margin-bottom: 12px;
+            padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color);
+            font-weight: 600; font-size: 16px; position: relative;
         }
+        .close-modal {
+            position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer;
+        }
+        .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .data-row { display: flex; justify-content: space-between; font-size: 14px; }
+        .data-label { color: var(--text-grey); }
 
-        .modal-avatar img {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 2px solid #dbdbdb;
-            object-fit: cover;
-        }
-
-        .modal-username {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .modal-username h2 {
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .edit-btn {
-            background-color: #0095f6;
-            color: #fff;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: background 0.2s;
-        }
-
-        .edit-btn:hover {
-            background-color: #0073e6;
-        }
-
-        .modal-body {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .profile-item {
-            margin-bottom: 8px;
-            font-size: 15px;
-            line-height: 1.5;
-        }
-
-        .profile-item strong {
-            font-weight: 600;
-            margin-right: 6px;
-        }
-
-        @keyframes fadeIn {
-            from {opacity: 0; transform: scale(0.95);}
-            to {opacity: 1; transform: scale(1);}
-        }
+        @keyframes zoomIn { from{transform:scale(1.05);opacity:0;} to{transform:scale(1);opacity:1;} }
 
         /* Responsive */
-        @media (max-width: 736px) {
-            .profile-header {
-                flex-direction: column;
-            }
-            .profile-img-container {
-                margin-bottom: 20px;
-            }
-            .gallery {
-                gap: 3px;
-            }
+        @media (max-width: 768px) {
+            .sidebar { width: 72px; padding: 20px 12px; }
+            .nav-item span, .logo { display: none; }
+            .main-content { margin-left: 72px; }
+            .profile-header { flex-direction: column; align-items: center; text-align: center; gap: 20px; }
+            .header-img-col { margin-right: 0; flex: 0 0 auto; }
+            .info-row-1 { justify-content: center; }
+            .info-row-2 { justify-content: center; gap: 20px; }
+            .container { padding: 0 10px; }
         }
     </style>
 </head>
-
 <body>
-    <!-- -------------------- NAVBAR -------------------- -->
-    <nav class="navbar">
-        <div class="nav-content">
-            <div class="logo">SUDO</div>
-            <div class="search-wrapper">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="search" class="search-input" placeholder="Search" />
-            </div>
-            <div class="nav-icons">
-                <i class="fa-solid fa-house"></i>
-                <i class="fa-brands fa-facebook-messenger"></i>
-                <i class="fa-regular fa-compass"></i>
-                <i class="fa-regular fa-heart"></i>
-                <i class="fa-regular fa-circle-user"></i>
-            </div>
-        </div>
-    </nav>
 
-    <!-- -------------------- CONTAINER -------------------- -->
-    <div class="container">
-
-        <!-- -------------------- PROFILE HEADER -------------------- -->
-        <header class="profile-header">
-            <div class="profile-img-container">
-                <div class="gradient-ring">
-                    <img src="{{ profile.avatar.url|default:'/images/avatars/normal.jpg' }}" alt="Avatar">
-                </div>
+    <aside class="sidebar">
+        <a href="/" class="logo">SUDO</a>
+        <nav class="nav-menu">
+            <div class="nav-item active" onclick="goHome()"><i class="fa-solid fa-house"></i> <span>Home</span></div>
+            <div class="nav-item"><i class="fa-solid fa-magnifying-glass"></i> <span>Search</span></div>
+            <div class="nav-item" onclick="explore()"><i class="fa-regular fa-compass"></i> <span>Explore</span></div>
+            <div class="nav-item"><i class="fa-solid fa-user-group"></i> <span>Group</span></div>
+            <div class="nav-item"><i class="fa-brands fa-facebook-messenger"></i> <span>Messages</span></div>
+            <div class="nav-item"><i class="fa-regular fa-heart"></i> <span>Notifications</span></div>
+            <div class="nav-item"><i class="fa-regular fa-square-plus"></i> <span>Create</span></div>
+            <div class="nav-item" onclick="profile()">
+                <i class="fa-solid fa-circle-user"></i> <span>{{ user.username }}</span>
             </div>
+        </nav>
+        <div class="nav-item"><i class="fa-solid fa-bars"></i> <span>More</span></div>
+        <div class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> <span>Logout</span></div>
+    </aside>
 
-            <div class="profile-info">
-                <div class="row-1">
-                    <h2 class="username">{{ user.username }}</h2>
-                    <div class="btns-container">
-                        <button class="btn">Following</button>
-                        <button class="btn">Message</button>
-                        <button class="btn btn-icon"><i class="fa-solid fa-user-plus"></i></button>
+    <main class="main-content">
+        <div class="container">
+            
+            <header class="profile-header">
+                <div class="header-img-col">
+                    <div class="avatar-ring">
+                        <img src="{{ profile.avatar.url|default:'https://via.placeholder.com/150' }}" alt="Avatar" class="avatar-img">
                     </div>
                 </div>
 
-                <div class="row-2">
-                    <div class="stat-item"><span>883</span> posts</div>
-                    <div class="stat-item"><span>14.1k</span> followers</div>
-                    <div class="stat-item"><span>1,000</span> following</div>
-                </div>
+                <div class="header-info-col">
+                    <div class="info-row-1">
+                        <h2 class="username-text" id="usernameTrigger" title="Click to view info">{{ user.username }}</h2>
 
-                <div class="row-3">
-                    <!-- Chỉ hiển thị bio trên profile page -->
-                    {{ profile.bio }}
+                        {% if current_user == user %}
+                            <a href="/accounts/edit_profile/" class="btn btn-grey">Edit Profile</a>
+                            <button class="btn btn-grey">View Archive</button>
+                            <button class="btn btn-grey"><i class="fa-solid fa-gear"></i></button>
+                        {% else %}
+                            <button class="btn btn-blue">Follow</button>
+                            <button class="btn btn-grey">Message</button>
+                            <button class="btn btn-grey"><i class="fa-solid fa-user-plus"></i></button>
+                            <button class="btn btn-grey"><i class="fa-solid fa-ellipsis"></i></button>
+                        {% endif %}
+                    </div>
+
+                    <div class="info-row-2">
+                        <div class="stat"><strong>{{ posts_count|default:"0" }}</strong> posts</div>
+                        <div class="stat"><strong>{{ followers_count|default:"0" }}</strong> followers</div>
+                        <div class="stat"><strong>{{ following_count|default:"0" }}</strong> following</div>
+                    </div>
+
+                    <div class="info-row-3">
+                        <span class="fullname">{{ profile.full_name }}</span>
+                        <div class="bio">
+                            {{ profile.bio|linebreaksbr }}
+                        </div>
+                        {% if profile.website %}
+                            <a href="{{ profile.website }}" target="_blank" style="color:#00376b; font-weight:600;">{{ profile.website }}</a>
+                        {% endif %}
+                    </div>
                 </div>
+            </header>
+
+            <div class="tabs">
+                <div class="tab active"><i class="fa-solid fa-table-cells"></i> POSTS</div>
+                <div class="tab"><i class="fa-regular fa-bookmark"></i> SAVED</div>
+                <div class="tab"><i class="fa-solid fa-user-tag"></i> TAGGED</div>
             </div>
-        </header>
 
-        <div class="tabs">
-            <div class="tab-item active"><i class="fa-solid fa-table-cells"></i> POSTS</div>
-            <div class="tab-item"><i class="fa-solid fa-clapperboard"></i> REELS</div>
-            <div class="tab-item"><i class="fa-regular fa-bookmark"></i> SAVED</div>
-            <div class="tab-item"><i class="fa-solid fa-user-tag"></i> TAGGED</div>
+            <div class="gallery">
+                {% for post in posts %}
+                    <div class="gallery-item">
+                        <img src="{{ post.image.url }}" alt="Post">
+                        <div class="overlay">
+                            <span><i class="fa-solid fa-heart"></i> {{ post.likes_count }}</span>
+                            <span><i class="fa-solid fa-comment"></i> {{ post.comments_count }}</span>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="gallery-item"><img src="https://picsum.photos/400?1" alt="demo"></div>
+                    <div class="gallery-item"><img src="https://picsum.photos/400?2" alt="demo"></div>
+                    <div class="gallery-item"><img src="https://picsum.photos/400?3" alt="demo"></div>
+                {% endfor %}
+            </div>
+
         </div>
+    </main>
 
-        <div class="gallery">
-            <div class="gallery-item"></div>
-            <div class="gallery-item"></div>
-            <div class="gallery-item"></div>
-            <div class="gallery-item"></div>
-            <div class="gallery-item"></div>
-            <div class="gallery-item"></div>
-        </div>
-    </div>
-
-    <div id="profileModal" class="modal">
+    <div id="infoModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
             <div class="modal-header">
-                <div class="modal-avatar">
-                    <img src="{{ profile.avatar.url }}" alt="Avatar">
-                </div>
-                <div class="modal-username">
-                    <h2>{{ user.username }}</h2>
-                    {% if current_user == user %}
-                        <button class="edit-btn">Edit Profile</button>
-                    {% endif %}
-                </div>
+                <span>Account Information</span>
+                <span class="close-modal">&times;</span>
             </div>
             <div class="modal-body">
-                {% for label, value in profile.get_display_fields %}
-                    {% if value %}
-                        <div class="profile-item">
-                            <strong>{{ label }}:</strong> <span>{{ value }}</span>
-                        </div>
-                    {% endif %}
-                {% endfor %}
+                <div style="text-align:center; margin-bottom:10px;">
+                    <img src="{{ profile.avatar.url|default:'https://via.placeholder.com/150' }}" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
+                </div>
+                
+                <div class="data-row">
+                    <span class="data-label">Username</span>
+                    <span>{{ user.username }}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Full Name</span>
+                    <span>{{ profile.full_name }}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Birth Day</span>
+                    <span>{{ profile.birth_day }}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Date Joined</span>
+                    <span>{{ user.date_joined | date:"F j, Y" }}</span>
+                </div>
+                
+                {% if current_user == user %}
+                    <div class="data-row">
+                        <span class="data-label">Email</span>
+                        <span>{{ user.email }}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Phone</span>
+                        <span>{{ profile.phone_number }}</span>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
     <script>
-        const modal = document.getElementById("profileModal");
-        const username = document.querySelector(".username");
-        const closeBtn = modal.querySelector(".close");
+        // Lấy các phần tử
+        const modal = document.getElementById("infoModal");
+        const trigger = document.getElementById("usernameTrigger");
+        const closeBtn = document.querySelector(".close-modal");
 
-        username.onclick = function() {
-            modal.style.display = "block";
+        // 1. Mở modal khi click vào Username
+        if (trigger) {
+            trigger.onclick = function() {
+                modal.style.display = "block";
+            }
         }
 
-        closeBtn.onclick = function() {
-            modal.style.display = "none";
-        }
-
-        window.onclick = function(e) {
-            if(e.target == modal) {
+        // 2. Đóng modal khi click dấu X
+        if (closeBtn) {
+            closeBtn.onclick = function() {
                 modal.style.display = "none";
             }
         }
-        //click edit button
-        const editBtn = document.querySelector(".edit-btn");
-        editBtn.onclick = function() {
-            window.location.href = "/accounts/edit_profile/";
+
+        // 3. Đóng modal khi click ra vùng đen bên ngoài
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // Function to navigate to profile
+        function profile() {
+            window.location.href = "/accounts/profile";
+        }
+
+        // Function to logout
+        function logout() {
+            window.location.href = "/accounts/logout";
+        }
+        // Function to go home
+        function goHome() {
+            window.location.href = "/";
+        }
+        // Function to explore
+        function explore() {
+            window.location.href = "/friends/";
         }
     </script>
 </body>

@@ -29,3 +29,12 @@ def home(request):
         "user": user,
         "is_authenticated": is_authenticated
     })
+
+def error_404_view(request, exception):
+    return render(request, 'errors/error_404.html', status=404)
+
+def error_500_view(request):
+    return render(request, 'errors/error_500.html', status=500)
+
+def error_403_view(request, exception):
+    return render(request, 'errors/error_403.html', status=403)

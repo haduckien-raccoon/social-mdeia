@@ -105,6 +105,7 @@ def verify_email_token(token_value):
         return False, "Token đã hết hạn."
     #tạo profile nếu chưa có
     create_user_profile(token.user)
+    token.user.is_verified = True
     #in ra log để debug
     print(f"[DEBUG] Email verified for user: {token.user.email}")
     try:
@@ -132,7 +133,8 @@ def login_user(email, password):
         return None, "Account is not active"
     if user.is_banned:
         return None, "Account is banned"
-
+    if not user.is_verified:
+        return None, "Email is not verified"
      # Tạo JWT
     return user, error
 
@@ -193,26 +195,40 @@ def get_profile_by_user_id(user_id):
     except UserProfile.DoesNotExist:
         return None
 
-def update_user_profile(user, full_name=None, avatar=None, bio=None):
+def update_user_profile(user, full_name=None, address=None, town=None, province=None, nationality=None, school=None, phone_number=None, birth_day=None, bio=None, avatar=None):
     profile, created = UserProfile.objects.get_or_create(user=user)
-
     if full_name is not None:
         profile.full_name = full_name
-    if avatar is not None:
-        profile.avatar = avatar
+    if address is not None:
+        profile.address = address
+    if town is not None:
+        profile.town = town
+    if province is not None:
+        profile.province = province
+    if nationality is not None:
+        profile.nationality = nationality
+    if school is not None:
+        profile.school = school
+    if phone_number is not None:
+        profile.phone_number = phone_number
+    if birth_day is not None:
+        profile.birth_day = birth_day
     if bio is not None:
         profile.bio = bio
+    if avatar is not None:
+        profile.avatar = avatar
 
     profile.updated_at = timezone.now()
     profile.save()
+
     return profile
-    
+
 def change_email(user, new_email):
     if User.objects.filter(email=new_email).exclude(id=user.id).exists():
         return False, "Email already in use"
 
     user.email = new_email
-    user.is_active = False  # Deactivate until email is verified
+    user.is_verified = False
     user.save()
 
     # Tạo token email mới
@@ -223,6 +239,8 @@ def change_email(user, new_email):
     # Gửi mail xác thực
     verify_url = f"http://127.0.0.1:8080/accounts/verify-email/?token={token.token}"
     send_mail('Verify new email', f'Click: {verify_url}', settings.EMAIL_HOST_USER, [user.email])
+    #đăng xuất user tất cả token
+    RefreshToken.objects.filter(user=user).delete()
     return True, "Email change initiated. Please verify your new email."
 
 def change_password(user, old_password, new_password):

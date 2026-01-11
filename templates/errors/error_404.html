@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - Design 1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #7C78CB; /* Màu Tím */
+            --bg-color: #f4f4fc;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #eef2f5, #dfe6ec);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Container cho desktop */
+        .desktop-container {
+            background: white;
+            width: 100%;
+            max-width: 800px; /* Chiều rộng lớn hơn cho desktop */
+            min-height: 500px;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: visible;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #666;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 25px;
+        }
+
+        /* Điều chỉnh hình ảnh cho desktop */
+        .image-area {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .bg-text {
+            font-size: 180px;
+            font-weight: 900;
+            color: var(--primary-color);
+            opacity: 0.1;
+            position: absolute;
+            z-index: 1;
+            letter-spacing: -15px;
+            user-select: none;
+        }
+
+        .illustration {
+            width: 280px;
+            z-index: 2;
+            position: relative;
+            filter: drop-shadow(0 10px 20px rgba(124, 120, 203, 0.2));
+        }
+
+        h2 {
+            font-size: 42px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        p {
+            color: #666;
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 280px;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 15px 30px rgba(124, 120, 203, 0.4);
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .btn:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 40px rgba(124, 120, 203, 0.5);
+        }
+
+        /* Responsive cho tablet */
+        @media (max-width: 1024px) {
+            .desktop-container {
+                max-width: 90%;
+                padding: 30px;
+            }
+            
+            .bg-text { font-size: 150px; }
+            .illustration { width: 220px; }
+            h2 { font-size: 36px; }
+            .btn { width: 240px; }
+        }
+
+        /* Responsive cho mobile */
+        @media (max-width: 768px) {
+            .desktop-container {
+                max-width: 100%;
+                padding: 25px;
+                border-radius: 15px;
+            }
+            
+            .status-bar { font-size: 14px; }
+            .bg-text { font-size: 100px; }
+            .illustration { width: 180px; }
+            h2 { font-size: 28px; }
+            p { font-size: 16px; }
+            .btn { 
+                width: 100%; 
+                padding: 18px; 
+                font-size: 16px; 
+            }
+        }
+
+        @media (max-width: 480px) {
+            body { 
+                background: white; 
+                padding: 10px;
+            }
+            .desktop-container { 
+                box-shadow: none; 
+                border-radius: 12px; 
+                padding: 20px;
+            }
+            .image-area { height: 220px; }
+            .bg-text { font-size: 80px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop-container">
+        <div class="content">
+            <div class="image-area">
+                <div class="bg-text">404</div>
+                <img src="/images/errors/404_error.png" alt="Error" class="illustration">
+            </div>
+
+            <h2>Opps!</h2>
+            <p>Seems like the link is not working</p>
+
+            <button class="btn" onclick="goHome()">Back to the home page</button>
+        </div>
+    </div>
+
+    <script>
+        function goHome() {
+            // Logic quay về trang trước đó trong lịch sử trình duyệt
+            window.location.href = "/";
+            console.log("Go Home Clicked");
+        }
+    </script>
+</body>
+</html>

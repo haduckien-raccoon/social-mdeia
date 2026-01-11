@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - Design 3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2D898B; /* Màu Xanh Teal */
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #eef2f5, #d1e0e0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .desktop-container {
+            background: white;
+            width: 100%;
+            max-width: 700px; /* Giảm chiều rộng */
+            min-height: 500px; /* Giảm chiều cao tối thiểu */
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #666;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 25px;
+        }
+
+        /* Đặc trưng Design 3: Số 404 vừa phải */
+        .error-code {
+            font-size: 80px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-shadow: 0 8px 15px rgba(45, 137, 139, 0.15);
+        }
+
+        .illustration {
+            width: 100%;
+            max-width: 320px; /* Giảm kích thước ảnh */
+            margin-bottom: 25px;
+            object-fit: contain;
+            filter: drop-shadow(0 12px 20px rgba(45, 137, 139, 0.18));
+        }
+
+        h2 {
+            font-size: 38px; /* Giảm cỡ chữ tiêu đề */
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        p {
+            color: #666;
+            font-size: 18px; /* Giảm cỡ chữ nội dung */
+            margin-bottom: 35px;
+            max-width: 550px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 260px; /* Giảm chiều rộng nút */
+            padding: 18px 30px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 12px 25px rgba(45, 137, 139, 0.35);
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .btn:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 16px 32px rgba(45, 137, 139, 0.45);
+        }
+
+        /* Responsive cho tablet */
+        @media (max-width: 1024px) {
+            .desktop-container {
+                max-width: 85%;
+                padding: 35px;
+            }
+            
+            .error-code { font-size: 70px; }
+            .illustration { max-width: 280px; }
+            h2 { font-size: 34px; }
+            p { font-size: 17px; }
+            .btn { width: 240px; }
+        }
+
+        /* Responsive cho mobile */
+        @media (max-width: 768px) {
+            .desktop-container {
+                max-width: 100%;
+                padding: 30px;
+                border-radius: 18px;
+            }
+            
+            .status-bar { font-size: 15px; }
+            .error-code { font-size: 60px; }
+            .illustration { max-width: 240px; }
+            h2 { font-size: 30px; }
+            p { font-size: 16px; }
+            .btn { 
+                width: 100%; 
+                padding: 16px; 
+                font-size: 17px; 
+            }
+        }
+
+        @media (max-width: 480px) {
+            body { 
+                background: white; 
+                padding: 10px;
+            }
+            .desktop-container { 
+                box-shadow: none; 
+                border-radius: 15px; 
+                padding: 25px;
+            }
+            .error-code { font-size: 50px; }
+            .illustration { max-width: 200px; }
+            h2 { font-size: 26px; }
+            .btn { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop-container">
+
+        <div class="content">
+            <div class="error-code">500</div>
+            
+            <img src="/images/errors/500_error.png" alt="Cereal" class="illustration">
+
+            <h2>Opps!</h2>
+            <p>Sorry, something went wrong on our end.</p>
+
+            <button class="btn" onclick="goHome()">Back to the home page</button>
+        </div>
+    </div>
+
+    <script>
+        function goHome() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

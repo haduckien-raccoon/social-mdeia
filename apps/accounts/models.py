@@ -30,8 +30,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
     is_active = models.BooleanField(default=False)
+    date_unactivate = models.DateTimeField(blank=True, null=True)
     is_staff = models.BooleanField(default=False)
     is_banned = models.BooleanField(default=False)
+    date_banned = models.DateTimeField(blank=True, null=True)
+    is_verified = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
     # Override groups & user_permissions to avoid clash

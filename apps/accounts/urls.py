@@ -12,4 +12,7 @@ urlpatterns = [
     path("profile/", profile_view, name="profile"),
     path("profile/<int:id>/", profile_view, name="profile-other"),
     path("edit_profile/", edit_profile_view, name="edit_profile"),
+    path("update_email/", update_email_view, name="update_email"),
+    path("update_username/", update_username_view, name="update_username"),
+    path("update_password/", update_password_view, name="update_password"),
 ]

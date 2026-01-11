@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from apps.accounts.models import User
+# User = settings.AUTH_USER_MODEL
 
 class FriendRequest(models.Model):
     STATUS_PENDING = "pending"

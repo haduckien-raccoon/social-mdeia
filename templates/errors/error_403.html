@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - Design 3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2D898B; /* Màu Xanh Teal */
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #eef2f5, #d1e0e0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .desktop-container {
+            background: white;
+            width: 100%;
+            max-width: 680px; /* Giảm chiều rộng */
+            min-height: 480px; /* Giảm chiều cao */
+            border-radius: 20px;
+            padding: 38px; /* Giảm padding */
+            box-shadow: 0 18px 45px rgba(0,0,0,0.14);
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 24px; /* Giảm khoảng cách giữa các phần tử */
+        }
+
+        /* Đặc trưng Design 3: Số 404 vừa phải cho desktop */
+        .error-code {
+            font-size: 75px; /* Giảm kích thước số lỗi */
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-shadow: 0 7px 15px rgba(45, 137, 139, 0.14);
+        }
+
+        .illustration {
+            width: 100%;
+            max-width: 290px; /* Giảm kích thước ảnh */
+            margin-bottom: 25px;
+            object-fit: contain;
+            filter: drop-shadow(0 11px 18px rgba(45, 137, 139, 0.16));
+        }
+
+        h2 {
+            font-size: 36px; /* Giảm kích thước tiêu đề */
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        p {
+            color: #666;
+            font-size: 17px; /* Giảm kích thước chữ mô tả */
+            margin-bottom: 35px;
+            max-width: 520px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 250px; /* Giảm chiều rộng nút */
+            padding: 18px 28px; /* Giảm padding */
+            border-radius: 13px;
+            font-size: 17px; /* Giảm kích thước chữ nút */
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 11px 23px rgba(45, 137, 139, 0.32);
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .btn:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 15px 30px rgba(45, 137, 139, 0.42);
+        }
+
+        /* Responsive cho tablet */
+        @media (max-width: 1024px) {
+            .desktop-container {
+                max-width: 85%;
+                padding: 35px;
+            }
+            
+            .error-code { font-size: 68px; }
+            .illustration { max-width: 260px; }
+            h2 { font-size: 33px; }
+            p { font-size: 16px; }
+            .btn { width: 235px; }
+        }
+
+        /* Responsive cho mobile */
+        @media (max-width: 768px) {
+            .desktop-container {
+                max-width: 100%;
+                padding: 30px;
+                border-radius: 18px;
+            }
+            
+            .error-code { font-size: 60px; }
+            .illustration { max-width: 230px; }
+            h2 { font-size: 30px; }
+            p { font-size: 15px; }
+            .btn { 
+                width: 100%; 
+                padding: 16px; 
+                font-size: 16px; 
+            }
+        }
+
+        @media (max-width: 480px) {
+            body { 
+                background: white; 
+                padding: 10px;
+            }
+            .desktop-container { 
+                box-shadow: none; 
+                border-radius: 16px; 
+                padding: 25px;
+            }
+            .error-code { font-size: 50px; }
+            .illustration { max-width: 190px; }
+            h2 { font-size: 26px; }
+            .btn { font-size: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop-container">
+        <div class="content">
+            <div class="error-code">403</div>
+            
+            <img src="/images/errors/403_error.png" alt="Cereal" class="illustration">
+
+            <h2>Opps!</h2>
+            <p>Sorry, you do not have permission to access this page.</p>
+
+            <button class="btn" onclick="goHome()">Back to the home page</button>
+        </div>
+    </div>
+
+    <script>
+        function goHome() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

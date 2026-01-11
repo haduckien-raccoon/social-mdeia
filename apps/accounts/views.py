@@ -197,6 +197,7 @@ def edit_profile_view(request):
         user_id = payload.get("user_id")
         user = User.objects.get(id=user_id)
         profile = get_object_or_404(UserProfile, user=user)
+        print(profile.birth_day)
 
         if request.method == "GET":
             return render(request, "accounts/edit_profile.html", {
@@ -206,27 +207,179 @@ def edit_profile_view(request):
 
         # POST: cập nhật profile
         # 1. Cập nhật text fields
-        profile.full_name = request.POST.get("full_name", profile.full_name)
-        profile.bio = request.POST.get("bio", profile.bio)
-        profile.address = request.POST.get("address", profile.address)
-        profile.town = request.POST.get("town", profile.town)
-        profile.province = request.POST.get("province", profile.province)
-        profile.nationality = request.POST.get("nationality", profile.nationality)
-        profile.school = request.POST.get("school", profile.school)
-        profile.phone_number = request.POST.get("phone_number", profile.phone_number)
+        full_name = request.POST.get("full_name", profile.full_name)
+        bio = request.POST.get("bio", profile.bio)
+        address = request.POST.get("address", profile.address)
+        town = request.POST.get("town", profile.town)
+        province = request.POST.get("province", profile.province)
+        nationality = request.POST.get("nationality", profile.nationality)
+        school = request.POST.get("school", profile.school)
+        phone_number = request.POST.get("phone_number", profile.phone_number)
         birth_day = request.POST.get("birth_day")
         if birth_day:
             profile.birth_day = birth_day  # Django tự parse date string "YYYY-MM-DD"
-
+        print(profile.birth_day)
+        print(birth_day)
         # 2. Cập nhật avatar nếu có upload
         avatar = request.FILES.get("avatar")
         if avatar:
             profile.avatar = avatar
 
-        profile.updated_at = timezone.now()
-        profile.save()
+        profile = update_user_profile(
+            user,
+            full_name=full_name,
+            bio=bio,
+            address=address,
+            town=town,
+            province=province,
+            nationality=nationality,
+            school=school,
+            phone_number=phone_number,
+            birth_day=birth_day,
+            avatar=avatar
+        )
 
-        return redirect("profile")
+        return redirect("edit_profile")
 
+    except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
+        return redirect("login")
+
+@csrf_exempt
+def update_email_view(request):
+    access_token = request.COOKIES.get("access")
+    if not access_token:
+        return redirect("login")
+
+    try:
+        payload = jwt.decode(
+            access_token,
+            settings.SECRET_KEY,
+            algorithms=["HS256"]
+        )
+        user_id = payload.get("user_id")
+        user = User.objects.get(id=user_id)
+        profile = get_object_or_404(UserProfile, user=user)
+
+        if request.method == "GET":
+            return render(request, "accounts/edit_email.html", {
+                "user": user,
+                "profile": profile
+            })
+
+        # POST: cập nhật email
+        new_email = request.POST.get("new_email")
+        if new_email:
+            is_change, message = change_email(user, new_email)
+            if is_change:
+                #xóa accessToken và refreshToken cũ
+                logout_view(request)
+                return render(request, "accounts/login.html", {
+                    "message": "Email updated successfully. Please verify your new email."
+                })
+            else:
+                return render(request, "accounts/edit_email.html", {
+                    "user": user,
+                    "profile": profile,
+                    "error": message
+                })
+        return render(request, "accounts/edit_email.html", {
+            "user": user,
+            "profile": profile,
+            "error": "Please provide a valid email."
+        })
+    except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
+        return redirect("login")
+    
+@csrf_exempt
+def update_username_view(request):
+    access_token = request.COOKIES.get("access")
+    if not access_token:
+        return redirect("login")
+
+    try:
+        payload = jwt.decode(
+            access_token,
+            settings.SECRET_KEY,
+            algorithms=["HS256"]
+        )
+        user_id = payload.get("user_id")
+        user = User.objects.get(id=user_id)
+        profile = get_object_or_404(UserProfile, user=user)
+
+        if request.method == "GET":
+            return render(request, "accounts/edit_username.html", {
+                "user": user,
+                "profile": profile
+            })
+
+        # POST: cập nhật username
+        new_username = request.POST.get("new_username")
+        if new_username:
+            is_change, message = change_username(user, new_username)
+            if is_change:
+                return render(request, "accounts/edit_username.html", {
+                    "user": user,
+                    "profile": profile,
+                    "message": "Username updated successfully."
+                })
+            else:
+                return render(request, "accounts/edit_username.html", {
+                    "user": user,
+                    "profile": profile,
+                    "error": message
+                })
+        return render(request, "accounts/edit_username.html", {
+            "user": user,
+            "profile": profile,
+            "error": "Please provide a valid username."
+        })
+    except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
+        return redirect("login")
+    
+@csrf_exempt
+def update_password_view(request):
+    access_token = request.COOKIES.get("access")
+    if not access_token:
+        return redirect("login")
+
+    try:
+        payload = jwt.decode(
+            access_token,
+            settings.SECRET_KEY,
+            algorithms=["HS256"]
+        )
+        user_id = payload.get("user_id")
+        user = User.objects.get(id=user_id)
+        profile = get_object_or_404(UserProfile, user=user)
+
+        if request.method == "GET":
+            return render(request, "accounts/edit_password.html", {
+                "user": user,
+                "profile": profile
+            })
+
+        # POST: cập nhật password
+        old_password = request.POST.get("old_password")
+        new_password = request.POST.get("new_password")
+        if old_password and new_password:
+            is_change, message = change_password(user, old_password, new_password)
+            # print(is_change, message)
+            if is_change:
+                #đăng xuất user tất cả token
+                logout_view(request)
+                return render(request, "accounts/login.html", {
+                    "messages": ["Password updated successfully. Please login again."]
+                })
+            else:
+                return render(request, "accounts/edit_password.html", {
+                    "user": user,
+                    "profile": profile,
+                    "messages": ["Old password is incorrect."]
+                })
+        return render(request, "accounts/edit_password.html", {
+            "user": user,
+            "profile": profile,
+            "messages": ["Please provide both old and new passwords."]
+        })
     except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
         return redirect("login")
