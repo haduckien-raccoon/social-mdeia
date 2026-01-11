@@ -24,7 +24,7 @@ from django.views.static import serve
 from django.urls import re_path
 
 handler404 = 'apps.core.views.error_404_view'
-handler500 = 'apps.core.views.error_500_view'
+# handler500 = 'apps.core.views.error_500_view'
 handler403 = 'apps.core.views.error_403_view'
 
 urlpatterns = [

@@ -1,6 +1,8 @@
+{% load friend_tags %}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    {% load friend_tags %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ user.username }} • Instagram Photos</title>
@@ -214,9 +216,13 @@
             <header class="profile-header">
                 <div class="header-img-col">
                     <div class="avatar-ring">
-                        <img src="{{ profile.avatar.url|default:'https://via.placeholder.com/150' }}" alt="Avatar" class="avatar-img">
+                        {% if profile.avatar %}
+                            <img src="{{ profile.avatar.url }}" alt="Avatar" class="avatar-img">
+                        {% else %}
+                            <img src="/avatars/normal.jpg" alt="Default Avatar" class="avatar-img">
+                        {% endif %}
                     </div>
-                </div>
+                </div>                
 
                 <div class="header-info-col">
                     <div class="info-row-1">

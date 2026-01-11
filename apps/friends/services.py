@@ -1,120 +1,298 @@
-from django.db.models import Q
-from apps.accounts.models import User
+from django.db.models import Q, Count
+# from django.contrib.auth import get_user_model
 from .models import FriendRequest, Friend
+from apps.accounts.models import User
 
 # -------------------------------
-# Helper
+# 1. Helper Check Status
 # -------------------------------
 def get_friend_status(user, target_user):
-    if user.id == target_user.id:
-        return "self"
-
-    from apps.friends.models import FriendRequest, Friend
-
-    # Check friend
-    if Friend.objects.filter(user=user, friend=target_user).exists() or \
-       Friend.objects.filter(user=target_user, friend=user).exists():
-        return "accepted"
-
-    # Nếu user gửi request
-    req = FriendRequest.objects.filter(from_user=user, to_user=target_user).first()
-    if req:
-        if req.status == FriendRequest.STATUS_PENDING:
-            return "pending_sent"  # thêm trạng thái mới
-        elif req.status == FriendRequest.STATUS_REJECTED:
-            return "rejected"
-        elif req.status == FriendRequest.STATUS_ACCEPTED:
-            return "accepted"
-
-    # Nếu user nhận request
-    req = FriendRequest.objects.filter(from_user=target_user, to_user=user).first()
-    if req:
-        if req.status == FriendRequest.STATUS_PENDING:
-            return "pending_received"
-        elif req.status == FriendRequest.STATUS_REJECTED:
-            return "none"  # người nhận thấy reject -> nothing
-        elif req.status == FriendRequest.STATUS_ACCEPTED:
-            return "accepted"
-
+    if user.id == target_user.id: return "self"
+    
+    # Check đã là bạn chưa
+    if Friend.objects.filter(user=user, friend=target_user).exists(): return "accepted"
+    
+    # Check User gửi lời mời -> Target
+    req = FriendRequest.objects.filter(from_user=user, to_user=target_user, status='pending').first()
+    if req: return "pending_sent"
+    
+    # Check Target gửi lời mời -> User
+    req = FriendRequest.objects.filter(from_user=target_user, to_user=user, status='pending').first()
+    if req: return "pending_received"
+    
     return "none"
 
 # -------------------------------
-# Friend Request Actions
+# 2. Lists & Suggestions (ĐÃ FIX LỖI 500 & FIELD ERROR)
 # -------------------------------
+
+# --- Lists ---
+def get_friend_list(user, limit=None):
+    queryset = Friend.objects.filter(user=user).select_related('friend')
+    if limit:
+        return [f.friend for f in queryset[:limit]]
+    return [f.friend for f in queryset]
+
+
+def get_pending_requests(user, limit=None):
+    queryset = FriendRequest.objects.filter(to_user=user, status='pending').select_related('from_user')
+    if limit:
+        return queryset[:limit]
+    return queryset
+
+#tìm những người mà mình đang gửi lời mới kết bạn để show ra UI
+def get_sent_pending_requests(user, limit=None):
+    queryset = FriendRequest.objects.filter(from_user=user, status='pending').select_related('to_user')
+    if limit:
+        return queryset[:limit]
+    return queryset
+
+def get_friend_suggestions(user, limit=10):
+    # 1. Lấy danh sách bạn bè & request pending (để loại trừ)
+    my_friend_ids = list(Friend.objects.filter(user=user).values_list('friend_id', flat=True))
+    
+    # Những người mình đã gửi hoặc họ đã gửi cho mình (status='pending')
+    pending_ids = list(FriendRequest.objects.filter(
+        Q(from_user=user) | Q(to_user=user),
+        status='pending'
+    ).values_list('to_user_id', 'from_user_id'))
+    
+    # Flatten list pending_ids (vì values_list trả về tuple)
+    pending_flat = set()
+    for item in pending_ids:
+        if item[0] != user.id: pending_flat.add(item[0])
+        if item[1] != user.id: pending_flat.add(item[1])
+
+    exclude_ids = set(my_friend_ids + list(pending_flat) + [user.id])
+
+    # 2. Tìm bạn chung
+    candidates = (
+        Friend.objects
+        .filter(user__id__in=my_friend_ids)     # Lấy bạn của bạn tôi
+        .exclude(friend__id__in=exclude_ids)    # Trừ đi tôi, bạn tôi, và những người đang pending
+        .values('friend')
+        .annotate(mutual_count=Count('friend'))
+        .order_by('-mutual_count')
+    )
+
+    if limit:
+        candidates = candidates[:limit]
+
+    suggestion_users = []
+    suggested_ids = []
+
+    for c in candidates:
+        try:
+            u = User.objects.get(id=c['friend'])
+            u.mutual_count = c['mutual_count']
+            suggestion_users.append(u)
+            suggested_ids.append(u.id)
+        except User.DoesNotExist:
+            continue
+
+    # 3. Bổ sung random nếu thiếu
+    if limit and len(suggestion_users) < limit:
+        need_more = limit - len(suggestion_users)
+        random_users = User.objects.exclude(id__in=exclude_ids.union(suggested_ids)).order_by('?')[:need_more]
+        for r in random_users:
+            r.mutual_count = 0
+            suggestion_users.append(r)
+
+    return suggestion_users
+
+# def get_friend_suggestions(user, limit=10):
+#     # 1. Bạn bè hiện tại
+#     my_friend_ids = list(
+#         Friend.objects.filter(user=user)
+#         .values_list('friend_id', flat=True)
+#     )
+
+#     # 2. Request đã gửi (pending_sent)
+#     sent_request_ids = list(
+#         FriendRequest.objects.filter(
+#             from_user=user,
+#             status='pending'
+#         ).values_list('to_user_id', flat=True)
+#     )
+
+#     # 3. Request đã nhận (pending_received)
+#     received_request_ids = list(
+#         FriendRequest.objects.filter(
+#             to_user=user,
+#             status='pending'
+#         ).values_list('from_user_id', flat=True)
+#     )
+
+#     # 4. IDs cần loại trừ tuyệt đối
+#     exclude_ids = set(
+#         my_friend_ids +
+#         sent_request_ids +
+#         received_request_ids +
+#         [user.id]
+#     )
+
+#     # -------------------------
+#     # 5. Gợi ý từ bạn chung
+#     # -------------------------
+#     candidates = (
+#         Friend.objects
+#         .filter(user__id__in=my_friend_ids)
+#         .exclude(friend__id__in=exclude_ids)
+#         .values('friend')
+#         .annotate(mutual_count=Count('friend'))
+#         .order_by('-mutual_count')[:limit]
+#     )
+
+#     suggestion_users = []
+#     suggested_ids = []
+
+#     for c in candidates:
+#         try:
+#             u = User.objects.get(id=c['friend'])
+#             u.mutual_count = c['mutual_count']
+#             u.friend_status = "none"
+#             suggestion_users.append(u)
+#             suggested_ids.append(u.id)
+#         except User.DoesNotExist:
+#             continue
+
+#     # -------------------------
+#     # 6. Bổ sung random user nếu thiếu
+#     # -------------------------
+#     if len(suggestion_users) < limit:
+#         need_more = limit - len(suggestion_users)
+
+#         random_users = (
+#             User.objects
+#             .exclude(id__in=exclude_ids.union(suggested_ids))
+#             .order_by('?')[:need_more]
+#         )
+
+#         for r in random_users:
+#             r.mutual_count = 0
+#             r.friend_status = "none"
+#             suggestion_users.append(r)
+
+#     return suggestion_users
+
+
+# -------------------------------
+# 3. Actions (Create / Update / Delete)
+# # -------------------------------
+# def send_friend_request(from_user, to_user):
+#     if from_user == to_user: return False, "Cannot add yourself."
+#     if Friend.objects.filter(user=from_user, friend=to_user).exists(): return False, "Already friends."
+
+#     existing, created = FriendRequest.objects.get_or_create(
+#         from_user=from_user, to_user=to_user,
+#         defaults={'status': 'pending'}
+#     )
+#     print(existing, created)
+    
+#     if not created:
+#         if existing.status == 'pending': return False, "Request already sent."
+#         if existing.status == 'accepted': return False, "Already friends."
+#         if existing.status == 'rejected': 
+#             existing.status = 'pending'
+#             existing.save()
+#             return True, "Request sent again."
+            
+#     return True, "Request sent."
+
+
+
+# --- Actions (Update hàm send để trả về object request phục vụ AJAX) ---
 def send_friend_request(from_user, to_user):
-    if from_user.id == to_user.id:
-        return None, "You cannot send friend request to yourself."
-    existing = FriendRequest.objects.filter(from_user=from_user, to_user=to_user).first()
-    if existing:
-        if existing.status == 'pending':
-            return None, "Friend request already pending."
-        if existing.status == 'accepted':
-            return None, "You are already friends."
-        if existing.status == 'rejected':
+    if from_user == to_user: return None, "Cannot add yourself."
+    if Friend.objects.filter(user=from_user, friend=to_user).exists(): return None, "Already friends."
+
+    existing, created = FriendRequest.objects.get_or_create(
+        from_user=from_user, to_user=to_user,
+        defaults={'status': 'pending'}
+    )
+    
+    if not created:
+        if existing.status == 'pending': return None, "Request already sent."
+        if existing.status == 'accepted': return None, "Already friends."
+        if existing.status == 'rejected': 
             existing.status = 'pending'
             existing.save()
-            return existing, None
-
-    fr = FriendRequest.objects.create(from_user=from_user, to_user=to_user, status='pending')
-    return fr, None
-
+            return existing, "Request sent again." # Trả về existing request object
+            
+    return existing, "Request sent." # Trả về new request object
 
 def accept_friend_request(user, request_id):
     try:
-        fr = FriendRequest.objects.get(id=request_id, to_user=user, status='pending')
-        fr.status = 'accepted'
-        fr.save()
-        # tạo 2 bản ghi Friend (A,B) & (B,A)
-        Friend.objects.get_or_create(user=fr.from_user, friend=fr.to_user)
-        Friend.objects.get_or_create(user=fr.to_user, friend=fr.from_user)
+        # user ở đây là người nhận (to_user) đang bấm chấp nhận
+        req = FriendRequest.objects.get(id=request_id, to_user=user, status='pending')
+        req.status = 'accepted'
+        req.save()
+        
+        # Tạo quan hệ 2 chiều trong bảng Friend
+        Friend.objects.get_or_create(user=req.from_user, friend=req.to_user)
+        Friend.objects.get_or_create(user=req.to_user, friend=req.from_user)
+        
         return True, "Friend request accepted."
     except FriendRequest.DoesNotExist:
-        return False, "Request not found or permission denied."
-
+        return False, "Request invalid or not found."
 
 def reject_friend_request(user, request_id):
     try:
-        fr = FriendRequest.objects.get(id=request_id, to_user=user, status='pending')
-        fr.status = 'rejected'
-        fr.save()
+        req = FriendRequest.objects.get(id=request_id, to_user=user, status='pending')
+        req.status = 'rejected'
+        req.save()
         return True, "Friend request rejected."
     except FriendRequest.DoesNotExist:
-        return False, "Request not found."
-
+        return False, "Request invalid."
 
 def unfriend_user(user, target_user):
+    # Xóa 2 chiều trong bảng Friend
     Friend.objects.filter(user=user, friend=target_user).delete()
     Friend.objects.filter(user=target_user, friend=user).delete()
+    
+    # Xóa sạch các request cũ để reset trạng thái
     FriendRequest.objects.filter(
-        Q(from_user=user, to_user=target_user) | Q(from_user=target_user, to_user=user),
-        status='accepted'
+        Q(from_user=user, to_user=target_user) | Q(from_user=target_user, to_user=user)
     ).delete()
+    
     return True, "Unfriended successfully."
 
-
-# -------------------------------
-# Lists
-# -------------------------------
-def get_friend_list(user):
-    friends = Friend.objects.filter(user=user).select_related('friend')
-    return [f.friend for f in friends]
-
-
-def get_pending_requests(user):
-    return FriendRequest.objects.filter(to_user=user, status='pending').select_related('from_user')
-
 def cancel_friend_request(user, request_id):
-    """Người gửi hủy lời mời"""
     try:
-        fr = FriendRequest.objects.get(id=request_id, from_user=user, status="pending")
-        fr.delete()
-        return True, "Friend request cancelled."
-    except FriendRequest.DoesNotExist:
-        return False, "Cannot cancel request."
+        # user ở đây là người gửi (from_user) muốn hủy
+        FriendRequest.objects.filter(id=request_id, from_user=user, status='pending').delete()
+        return True, "Request cancelled."
+    except Exception:
+        return False, "Error cancelling request."
 
-def get_friend_suggestions(user, limit=10):
-    """Gợi ý bạn bè dựa trên bạn của bạn bè"""
-    current_friends = set(f.id for f in get_friend_list(user))
-    current_friends.add(user.id)
-    suggestions = User.objects.exclude(id__in=current_friends)[:limit]
-    return suggestions
+def get_friend_status_detail(user, target_user):
+    if user == target_user:
+        return {"status": "self"}
+
+    if Friend.objects.filter(user=user, friend=target_user).exists():
+        return {"status": "accepted"}
+
+    sent = FriendRequest.objects.filter(
+        from_user=user,
+        to_user=target_user,
+        status='pending'
+    ).first()
+    if sent:
+        return {
+            "status": "pending_sent",
+            "request_id": sent.id
+        }
+
+    received = FriendRequest.objects.filter(
+        from_user=target_user,
+        to_user=user,
+        status='pending'
+    ).first()
+    if received:
+        return {
+            "status": "pending_received",
+            "request_id": received.id
+        }
+
+    return {"status": "none"}
+
