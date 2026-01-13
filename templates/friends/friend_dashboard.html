@@ -14,7 +14,14 @@
     <div class="grid-friends">
         {% for req in pending_requests %}
         <div class="card">
-            <img src="{{ req.from_user|get_avatar }}" alt="avatar">
+            <img 
+                src="{% if friend.profile and friend.profile.avatar %}
+                        {{ friend.profile.avatar.url }}
+                    {% else %}
+                        /images/avatars/normal.jpg
+                    {% endif %}"
+                alt="{{ friend.username }}"
+            >
             <div class="info">
                 <b><a href="/accounts/profile/{{ req.from_user.id }}">{{ req.from_user.username }}</a></b>
                 <div class="btns">
@@ -45,7 +52,15 @@
     <div class="grid-friends">
         {% for user in suggestions %}
         <div class="card">
-            <img src="{{ user|get_avatar }}" alt="avatar">
+            <img 
+                src="{% if friend.profile and friend.profile.avatar %}
+                        {{ friend.profile.avatar.url }}
+                    {% else %}
+                        /images/avatars/normal.jpg
+                    {% endif %}"
+                alt="{{ friend.username }}"
+            >
+
             <div class="info">
                 <b><a href="/accounts/profile/{{ user.id }}">{{ user.username }}</a></b>
                 {% if user.mutual_count > 0 %}
@@ -75,7 +90,14 @@
     <div class="grid-friends">
         {% for friend in friends %}
         <div class="card">
-            <img src="{{ friend|get_avatar }}">
+            <img 
+                src="{% if friend.profile and friend.profile.avatar %}
+                        {{ friend.profile.avatar.url }}
+                    {% else %}
+                        /images/avatars/normal.jpg
+                    {% endif %}"
+                alt="{{ friend.username }}"
+            >
             <div class="info">
                 <b>{{ friend.username }}</b>
                 <a href="/accounts/profile/{{ friend.id }}" class="btn-grey" style="text-align:center; display:block; margin-top:5px;">View Profile</a>
