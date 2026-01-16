@@ -19,14 +19,16 @@ def friend_dashboard_view(request):
     friends = get_friend_list(user, limit=10)
     pending_requests = get_pending_requests(user, limit=10)
     suggestions = get_friend_suggestions(user, limit=10)
-    users_pending = get_sent_pending_requests(user)
+    sent_requests = get_sent_pending_requests(user, limit=10)
 
     context = {
         "friends": friends,
         "pending_requests": pending_requests,
         "suggestions": suggestions,
-        "users_pending": users_pending,
-        "total_friends": Friend.objects.filter(user=user).count(), # Đếm tổng để hiện số
+        "sent_requests": sent_requests, # Truyền vào context
+        "total_friends": Friend.objects.filter(user=user).count(),
+        "total_sent": FriendRequest.objects.filter(from_user=user, status='pending').count(),
+        "total_received": FriendRequest.objects.filter(to_user=user, status='pending').count(),
     }
     return render(request, "friends/friend_dashboard.html", context)
 
@@ -45,6 +47,9 @@ def all_friends_view(request):
     friends = get_friend_list(request.user) # Không limit
     return render(request, "friends/list_friends.html", {"friends": friends})
 
+def all_sent_requests_view(request):
+    sent_requests = get_sent_pending_requests(request.user)
+    return render(request, "friends/list_sent_requests.html", {"sent_requests": sent_requests})
 # -------------------------------
 # 3. ACTIONS (Hỗ trợ AJAX)
 # -------------------------------

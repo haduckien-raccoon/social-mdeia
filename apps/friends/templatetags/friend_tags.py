@@ -15,17 +15,13 @@ def get_request_id(from_user, to_user):
     print("Debug get_request_id:", from_user, to_user, req)
     return req.id if req else None
 
-# --- THÊM ĐOẠN NÀY ---
 @register.filter
 def get_avatar(user):
-    """
-    Lấy avatar an toàn. Nếu lỗi hoặc không có avatar thì trả về ảnh mặc định.
-    Cách dùng trong template: {{ user|get_avatar }}
-    """
+    """Lấy avatar an toàn, trả về ảnh mặc định nếu không có"""
     try:
-        if hasattr(user, 'userprofile') and user.userprofile.avatar:
-            return user.userprofile.avatar.url
+        if hasattr(user, 'profile') and user.profile.avatar:
+            return user.profile.avatar.url
     except Exception:
         pass
-    return "https://ui-avatars.com/api/?name=" + user.username + "&background=random"
+    return "/images/avatars/normal.jpg"
 # ---------------------

@@ -1,0 +1,88 @@
+{% extends 'base.html' %} 
+{% load friend_tags %}
+
+{% block title %}Friend Requests • SUDO{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root { --sidebar-width: 245px; --content-width: 935px; --bg-body: #fafafa; }
+
+    .main-content {
+        margin-left: var(--sidebar-width) !important;
+        padding: 30px 20px;
+        display: flex; justify-content: center;
+        min-height: 100vh; background-color: var(--bg-body);
+    }
+
+    .container { width: 100%; max-width: var(--content-width); }
+
+    .section-header { 
+        display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; 
+    }
+    .section-header h3 { font-size: 20px; font-weight: 600; color: #262626; }
+    .back-link { color: #0095f6; font-weight: 600; text-decoration: none; font-size: 14px; }
+    .back-link:hover { text-decoration: underline; }
+
+    .grid-friends { 
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; 
+    }
+
+    .card { 
+        background: #fff; border: 1px solid #dbdbdb; border-radius: 8px; 
+        overflow: hidden; display: flex; flex-direction: column;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+    .card img { width: 100%; height: 200px; object-fit: cover; background: #f0f2f5; }
+    
+    .info { padding: 15px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .info b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .info b a { text-decoration: none; color: #262626; }
+    .info b a:hover { text-decoration: underline; }
+
+    .btns { display: flex; gap: 8px; margin-top: auto; }
+    .btns form { flex: 1; display: flex; }
+    
+    .btn { 
+        border: none; padding: 8px 0; border-radius: 6px; 
+        font-weight: 600; cursor: pointer; width: 100%; font-size: 13px; transition: 0.2s;
+    }
+    .btn-blue { background: #0095f6; color: white; }
+    .btn-blue:hover { background: #1877f2; }
+    .btn-grey { background: #efefef; color: black; }
+    .btn-grey:hover { background: #dbdbdb; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main-content">
+    <div class="container">
+        <div class="section-header">
+            <h3>All Friend Requests</h3>
+            <a href="{% url 'friends:index' %}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        </div>
+        
+        <div class="grid-friends">
+            {% for req in requests %}
+            <div class="card">
+                <img src="{{ req.from_user|get_avatar }}" alt="avatar">
+                <div class="info">
+                    <b><a href="/accounts/profile/{{ req.from_user.id }}">{{ req.from_user.username }}</a></b>
+                    <div class="btns">
+                        <form action="{% url 'friends:accept_request' req.id %}" method="POST">
+                            {% csrf_token %}
+                            <button class="btn btn-blue">Confirm</button>
+                        </form>
+                        <form action="{% url 'friends:reject_request' req.id %}" method="POST">
+                            {% csrf_token %}
+                            <button class="btn btn-grey">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</main>
+{% endblock %}

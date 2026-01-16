@@ -1,0 +1,63 @@
+{% extends 'base.html' %} 
+{% load friend_tags %}
+
+{% block title %}My Friends • SUDO{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* CSS đồng bộ */
+    :root {
+        --sidebar-width: 245px;
+        --content-width: 935px;
+        --bg-body: #fafafa;
+    }
+    .main-content {
+        margin-left: var(--sidebar-width) !important;
+        padding: 30px 20px;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+    }
+    .container { width: 100%; max-width: var(--content-width); }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .section-header h3 { font-size: 20px; font-weight: 600; color: #262626; }
+    .back-link { color: #0095f6; font-weight: 600; text-decoration: none; font-size: 14px; }
+    .back-link:hover { text-decoration: underline; }
+    .grid-friends { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+    .card { background: #fff; border: 1px solid #dbdbdb; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .card img { width: 100%; height: 200px; object-fit: cover; background: #f0f2f5; }
+    .info { padding: 15px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+    .info b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .info b a { text-decoration: none; color: #262626; }
+    .btn { border: none; padding: 8px 0; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; font-size: 13px; transition: 0.2s; text-align: center; text-decoration: none; display: block; }
+    .btn-grey { background: #efefef; color: black; }
+    .btn-grey:hover { background: #dbdbdb; }
+    .btn-unfriend { color: #ed4956; margin-top: 5px; font-size: 12px; cursor: pointer; background: none; border: none; width: auto; align-self: center; }
+    .btn-unfriend:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="container" style="max-width: 935px; margin: 30px auto;">
+        <div class="section-header">
+            <h3>All Friends</h3>
+            <a href="{% url 'friends:index' %}" class="see-all">Back to Dashboard</a>
+        </div>
+
+        <div class="grid-friends">
+            {% for friend in friends %}
+            <div class="card">
+                <img src="{{ friend|get_avatar }}">
+                <div class="info">
+                    <b>{{ friend.username }}</b>
+                    <a href="/accounts/profile/{{ friend.id }}" class="btn-grey" style="text-align:center; display:block; margin-top:5px;">View Profile</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<style>.grid-friends{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px}.card{border:1px solid #dbdbdb;border-radius:8px;overflow:hidden;background:#fff}.card img{width:100%;height:180px;object-fit:cover}.card .info{padding:10px;display:flex;flex-direction:column;gap:5px}.btn-grey{background:#efefef;color:black;border:none;padding:7px 15px;border-radius:4px;font-weight:600;cursor:pointer}.section-header{display:flex;justify-content:space-between;margin-bottom:15px}.see-all{text-decoration:none;color:#0095f6;font-weight:600}</style>
+{% endblock %}

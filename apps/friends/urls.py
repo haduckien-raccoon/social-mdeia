@@ -11,6 +11,7 @@ urlpatterns = [
     path("requests/", all_requests_view, name="all_requests"),
     path("suggestions/", all_suggestions_view, name="all_suggestions"),
     path("my-friends/", all_friends_view, name="all_friends"),
+    path("sent-requests/", all_sent_requests_view, name="all_sent_requests"), # 4. Lời mời đã gửi (Mới)
 
     # Action AJAX
     path("api/send/<int:user_id>/", send_request_ajax, name="api_send_request"),

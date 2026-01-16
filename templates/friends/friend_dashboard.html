@@ -1,128 +1,196 @@
+{% extends 'base.html' %} 
 {% load friend_tags %}
 
-{% block content %}
-<div class="container" style="max-width: 935px; margin: 30px auto;">
+{% block title %}Friends • SUDO{% endblock %}
 
-    <div class="section-header">
-        <h3>Friend Requests</h3>
-        {% if pending_requests|length >= 10 %}
-            <a href="{% url 'friends:all_requests' %}" class="see-all">See All</a>
-        {% endif %}
-    </div>
+{% block extra_css %}
+<style>
+    /* --- KHẮC PHỤC LỖI BỊ LỆCH --- */
+    :root {
+        --sidebar-width: 245px;
+        --content-width: 935px;
+        --bg-body: #fafafa;
+    }
+    .main-content {
+        margin-left: var(--sidebar-width) !important;
+        padding: 30px 20px;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 935px;
+    }
     
-    {% if pending_requests %}
-    <div class="grid-friends">
-        {% for req in pending_requests %}
-        <div class="card">
-            <img 
-                src="{% if friend.profile and friend.profile.avatar %}
-                        {{ friend.profile.avatar.url }}
-                    {% else %}
-                        /images/avatars/normal.jpg
-                    {% endif %}"
-                alt="{{ friend.username }}"
-            >
-            <div class="info">
-                <b><a href="/accounts/profile/{{ req.from_user.id }}">{{ req.from_user.username }}</a></b>
-                <div class="btns">
-                    <form action="{% url 'friends:accept_request' req.id %}" method="POST">
-                        {% csrf_token %}
-                        <button class="btn-blue">Confirm</button>
-                    </form>
-                    <form action="{% url 'friends:reject_request' req.id %}" method="POST">
-                        {% csrf_token %}
-                        <button class="btn-grey">Delete</button>
-                    </form>
+    /* --- CSS GIAO DIỆN --- */
+    .divider { margin: 20px 0; border: 0; border-top: 1px solid #dbdbdb; }
+    
+    .section-header { 
+        display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; 
+    }
+    .see-all { 
+        color: #0095f6; font-weight: 600; text-decoration: none; font-size: 14px; cursor: pointer; 
+    }
+    .see-all:hover { text-decoration: underline; }
+    
+    .grid-friends { 
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; 
+    }
+    
+    .card { 
+        border: 1px solid #dbdbdb; border-radius: 8px; 
+        overflow: hidden; background: #fff; 
+        display: flex; flex-direction: column;
+    }
+    .card img { 
+        width: 100%; height: 180px; object-fit: cover; background: #f0f2f5;
+    }
+    .card .info { 
+        padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; 
+    }
+    .card b { 
+        font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+    }
+    
+    .btns { display: flex; gap: 5px; margin-top: auto; }
+    .btns form { flex: 1; display: flex; }
+    
+    .btn-blue { 
+        background: #0095f6; color: white; border: none; 
+        padding: 7px 10px; border-radius: 6px; font-weight: 600; 
+        cursor: pointer; width: 100%; font-size: 13px;
+    }
+    .btn-grey { 
+        background: #efefef; color: black; border: none; 
+        padding: 7px 10px; border-radius: 6px; font-weight: 600; 
+        cursor: pointer; width: 100%; font-size: 13px;
+    }
+    .btn-cancel { color: #555; }
+    .empty-text { color: #8e8e8e; font-style: italic; margin-bottom: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="container">
+
+        <div class="section-header">
+            <h3>Friend Requests <span style="color:#8e8e8e; font-size:16px">({{ total_received|default:"0" }})</span></h3>
+            {% if pending_requests|length >= 10 %}
+                <a href="{% url 'friends:all_requests' %}" class="see-all">See All</a>
+            {% endif %}
+        </div>
+        
+        {% if pending_requests %}
+        <div class="grid-friends">
+            {% for req in pending_requests %}
+            <div class="card">
+                <img src="{{ req.from_user|get_avatar }}" alt="avatar">
+                <div class="info">
+                    <b><a href="/accounts/profile/{{ req.from_user.id }}">{{ req.from_user.username }}</a></b>
+                    <div class="btns">
+                        <form action="{% url 'friends:accept_request' req.id %}" method="POST">
+                            {% csrf_token %}
+                            <button class="btn-blue">Confirm</button>
+                        </form>
+                        <form action="{% url 'friends:reject_request' req.id %}" method="POST">
+                            {% csrf_token %}
+                            <button class="btn-grey">Delete</button>
+                        </form>
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <p class="empty-text">No new friend requests.</p>
-    {% endif %}
+        {% else %}
+        <p class="empty-text">No new friend requests.</p>
+        {% endif %}
 
-    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        <hr class="divider">
 
-    <div class="section-header">
-        <h3>People You May Know</h3>
-        <a href="{% url 'friends:all_suggestions' %}" class="see-all">See All</a>
-    </div>
-    
-    <div class="grid-friends">
-        {% for user in suggestions %}
-        <div class="card">
-            <img 
-                src="{% if friend.profile and friend.profile.avatar %}
-                        {{ friend.profile.avatar.url }}
-                    {% else %}
-                        /images/avatars/normal.jpg
-                    {% endif %}"
-                alt="{{ friend.username }}"
-            >
+        <div class="section-header">
+            <h3>Sent Requests <span style="color:#8e8e8e; font-size:16px">({{ total_sent|default:"0" }})</span></h3>
+            {% if sent_requests|length >= 10 %}
+                <a href="{% url 'friends:all_sent_requests' %}" class="see-all">See All</a>
+            {% endif %}
+        </div>
 
-            <div class="info">
-                <b><a href="/accounts/profile/{{ user.id }}">{{ user.username }}</a></b>
-                {% if user.mutual_count > 0 %}
-                    <small style="color:#8e8e8e">{{ user.mutual_count }} mutual friends</small>
-                {% else %}
-                    <small style="color:#8e8e8e">Suggested for you</small>
-                {% endif %}
-                
-                <button 
-                    class="btn-blue btn-ajax-action" 
-                    style="width:100%; margin-top:5px;"
-                    data-user-id="{{ user.id }}"
-                    data-action="send"
-                >Add Friend</button>
+        {% if sent_requests %}
+        <div class="grid-friends">
+            {% for req in sent_requests %}
+            <div class="card">
+                <img src="{{ req.to_user|get_avatar }}" alt="avatar">
+                <div class="info">
+                    <b><a href="/accounts/profile/{{ req.to_user.id }}">{{ req.to_user.username }}</a></b>
+                    <small style="color:#8e8e8e">Request Sent</small>
+                    
+                    <button 
+                        class="btn-grey btn-cancel btn-ajax-action" 
+                        style="width:100%; margin-top:5px;"
+                        data-user-id="{{ req.to_user.id }}"
+                        data-request-id="{{ req.id }}"
+                        data-action="cancel"
+                    >Cancel</button>
+                </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
+        {% else %}
+        <p class="empty-text">You haven't sent any requests.</p>
+        {% endif %}
 
-    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        <hr class="divider">
 
-    <div class="section-header">
-        <h3>My Friends ({{ total_friends }})</h3>
-        <a href="{% url 'friends:all_friends' %}" class="see-all">See All</a>
-    </div>
-
-    <div class="grid-friends">
-        {% for friend in friends %}
-        <div class="card">
-            <img 
-                src="{% if friend.profile and friend.profile.avatar %}
-                        {{ friend.profile.avatar.url }}
+        <div class="section-header">
+            <h3>People You May Know</h3>
+            <a href="{% url 'friends:all_suggestions' %}" class="see-all">See All</a>
+        </div>
+        
+        <div class="grid-friends">
+            {% for user in suggestions %}
+            <div class="card">
+                <img src="{{ user|get_avatar }}" alt="{{ user.username }}">
+                <div class="info">
+                    <b><a href="/accounts/profile/{{ user.id }}">{{ user.username }}</a></b>
+                    {% if user.mutual_count > 0 %}
+                        <small style="color:#8e8e8e">{{ user.mutual_count }} mutual friends</small>
                     {% else %}
-                        /images/avatars/normal.jpg
-                    {% endif %}"
-                alt="{{ friend.username }}"
-            >
-            <div class="info">
-                <b>{{ friend.username }}</b>
-                <a href="/accounts/profile/{{ friend.id }}" class="btn-grey" style="text-align:center; display:block; margin-top:5px;">View Profile</a>
+                        <small style="color:#8e8e8e">Suggested for you</small>
+                    {% endif %}
+                    
+                    <button 
+                        class="btn-blue btn-ajax-action" 
+                        style="width:100%; margin-top:5px;"
+                        data-user-id="{{ user.id }}"
+                        data-action="send"
+                    >Add Friend</button>
+                </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
-</div>
 
-<style>
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .see-all { color: #0095f6; font-weight: 600; text-decoration: none; font-size: 14px; cursor: pointer; }
-    .see-all:hover { text-decoration: underline; }
-    .grid-friends { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-    .card { border: 1px solid #dbdbdb; border-radius: 8px; overflow: hidden; background: #fff; }
-    .card img { width: 100%; height: 180px; object-fit: cover; }
-    .card .info { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-    .btn-blue { background: #0095f6; color: white; border: none; padding: 7px 15px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-    .btn-grey { background: #efefef; color: black; border: none; padding: 7px 15px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-    .btn-cancel { background: #efefef; color: #333; } /* Style cho nút Cancel */
-    .empty-text { color: #8e8e8e; font-style: italic; }
-    .btns { display: flex; gap: 5px; }
-    .btns form { flex: 1; }
-    .btns button { width: 100%; }
-</style>
+        <hr class="divider">
+
+        <div class="section-header">
+            <h3>My Friends <span style="color:#8e8e8e; font-size:16px">({{ total_friends|default:"0" }})</span></h3>
+            <a href="{% url 'friends:all_friends' %}" class="see-all">See All</a>
+        </div>
+
+        <div class="grid-friends">
+            {% for friend in friends %}
+            <div class="card">
+                <img src="{{ friend|get_avatar }}" alt="{{ friend.username }}">
+                <div class="info">
+                    <b>{{ friend.username }}</b>
+                    <a href="/accounts/profile/{{ friend.id }}" class="btn-grey" style="text-align:center; display:block; margin-top:5px;">Profile</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</main>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -132,39 +200,38 @@
             btn.addEventListener('click', function() {
                 const userId = this.getAttribute('data-user-id');
                 const action = this.getAttribute('data-action');
-                
-                // Xác định URL và Method dựa trên hành động
                 let url = '';
                 
                 if (action === 'send') {
                     url = `/friends/api/send/${userId}/`;
                 } else if (action === 'cancel') {
-                    // Khi đã gửi request, ta cần request_id (đã lưu vào dataset lúc send thành công)
                     const reqId = this.getAttribute('data-request-id');
                     url = `/friends/api/cancel/${reqId}/`;
                 }
 
-                // Call API
+                // Hiệu ứng Loading
+                const originalText = this.textContent;
+                this.textContent = '...';
+                this.disabled = true;
+
                 fetch(url, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': '{{ csrf_token }}', // Django CSRF
+                        'X-CSRFToken': '{{ csrf_token }}',
                         'Content-Type': 'application/json'
                     }
                 })
                 .then(response => response.json())
                 .then(data => {
+                    this.disabled = false;
                     if (data.status === 'success') {
-                        // Logic đổi giao diện nút bấm
                         if (action === 'send') {
-                            // Chuyển sang nút Cancel
-                            this.textContent = 'Cancel Request';
+                            this.textContent = 'Cancel';
                             this.classList.remove('btn-blue');
                             this.classList.add('btn-grey', 'btn-cancel');
                             this.setAttribute('data-action', 'cancel');
-                            this.setAttribute('data-request-id', data.request_id); // Lưu request_id server trả về
+                            this.setAttribute('data-request-id', data.request_id);
                         } else {
-                            // Chuyển về nút Add Friend
                             this.textContent = 'Add Friend';
                             this.classList.remove('btn-grey', 'btn-cancel');
                             this.classList.add('btn-blue');
@@ -172,10 +239,15 @@
                             this.removeAttribute('data-request-id');
                         }
                     } else {
+                        this.textContent = originalText;
                         alert('Error: ' + data.message);
                     }
                 })
-                .catch(err => console.error('Error:', err));
+                .catch(err => {
+                    console.error('Error:', err);
+                    this.textContent = originalText;
+                    this.disabled = false;
+                });
             });
         });
     });
