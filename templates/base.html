@@ -22,6 +22,14 @@
             --sidebar-width: 245px;
             --content-width: 935px;
         }
+        .main-content {
+            margin-left: var(--sidebar-width) !important;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -102,7 +110,10 @@
         <div class="nav-item" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> <span>Logout</span></div>
     </aside>
 
-    {% block content %}{% endblock %}
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
 
     <script>
         function goHome() { window.location.href = "/"; }
