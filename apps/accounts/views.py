@@ -171,6 +171,10 @@ def profile_view(request, id=None):
             user = current_user
 
         profile = get_object_or_404(UserProfile, user=user)
+        #in toàn bộ profile để debug
+        if profile.bio is None:
+            profile.bio = ""
+        print(f"[DEBUG] Viewing profile: {profile.user.username}, Bio: {profile.bio}")
 
         # Truyền current_user để template so sánh với user đang xem
         return render(request, "accounts/profile.html", {

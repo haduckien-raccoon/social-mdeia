@@ -1,0 +1,32 @@
+<h2>{{ post.content }}</h2>
+
+<button onclick="react('like')">👍</button>
+<button onclick="react('love')">❤️</button>
+
+<div id="comments">
+  {% for comment in comments %}
+    {% include "posts/comment_recursive.html" with comment=comment %}
+  {% endfor %}
+</div>
+
+<input id="content">
+<button onclick="send()">Comment</button>
+
+<script>
+const ws = new WebSocket(
+  'ws://' + window.location.host + '/ws/posts/{{ post.id }}/'
+);
+
+ws.onmessage = e => location.reload();
+
+function react(type){
+  ws.send(JSON.stringify({action:'react_post', reaction:type}));
+}
+
+function send(){
+  ws.send(JSON.stringify({
+    action:'comment',
+    content:document.getElementById('content').value
+  }));
+}
+</script>

@@ -1,0 +1,29 @@
+<h2>Create Post</h2>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <textarea name="content" placeholder="What's on your mind?"></textarea>
+  <input type="file" name="images" multiple>
+  <button type="submit">Post</button>
+</form>
+
+<hr>
+
+{% for post in posts %}
+  <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px;">
+    <p><b>{{ post.author }}</b></p>
+    <p>{{ post.content }}</p>
+
+    {% for img in post.images.all %}
+      <img src="{{ img.image.url }}" width="200">
+    {% endfor %}
+
+    <form method="post" action="{% url 'posts:react_post' post.id %}">
+      {% csrf_token %}
+      <button name="reaction" value="like">👍</button>
+      <button name="reaction" value="love">❤️</button>
+    </form>
+
+    <a href="{% url 'posts:post_detail' post.id %}">View comments</a>
+    <a href="{% url 'posts:delete_post' post.id %}">Delete</a>
+  </div>
+{% endfor %}
