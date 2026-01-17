@@ -11,18 +11,22 @@ def create_post_view(request):
 
         images = request.FILES.getlist("images")
         files = request.FILES.getlist("files")
+        tagged = request.POST.getlist("tagged_users")
+        location = request.POST.get("location", "")
 
         post = create_post(
             user=request.user,
             content=content,
             privacy=privacy,
             images=images,
-            files=files
+            files=files,
+            tagged_users=tagged,
+            location_name=location
         )
 
         return redirect("posts:post_detail", post_id=post.id)
-
-    return render(request, "posts/create_post.html")
+    friends = Friend.objects.filter(user=request.user).select_related('friend')
+    return render(request, "posts/create_post.html", {"friends": friends})
 
 
 def edit_post_view(request, post_id):
@@ -108,15 +112,16 @@ def post_detail_view(request, post_id):
         comment__post=post,
         user=request.user
     ):
-        comment_reaction_map[r.id] = r.reaction_type
+        comment_reaction_map[r.comment_id] = r.reaction_type
         print("MAP:", comment_reaction_map)
-
+    for comment in comments:
+        comment.user_reaction = comment_reaction_map.get(comment.id)
     context = {
         "post": post,
         "comments": comments,
         "post_reactions": post_reactions,
         "user_post_reaction": user_post_reaction,
-        "comment_reaction_map": comment_reaction_map,
+        # "comment_reaction_map": comment_reaction_map,
     }
 
     return render(request, "posts/post_detail.html", context)

@@ -2,42 +2,56 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Tạo bài viết mới</h5>
+    <div class="col-md-7">
+        <div class="card-modern shadow-sm p-0">
+            <div class="border-bottom p-3 text-center position-relative">
+                <h5 class="fw-bold mb-0">Tạo bài viết</h5>
+                <a href="/" class="btn btn-light btn-sm rounded-circle position-absolute top-50 end-0 translate-middle-y me-3">
+                    <i class="fas fa-times"></i>
+                </a>
             </div>
-            <div class="card-body">
+            
+            <div class="p-3">
+                <div class="d-flex align-items-center mb-3">
+                    <img src="https://ui-avatars.com/api/?name={{ request.user.username }}" class="rounded-circle me-2" width="40">
+                    <div>
+                        <div class="fw-bold">{{ request.user.username }}</div>
+                        <select class="form-select form-select-sm border-0 bg-light rounded-pill py-0 ps-2 pe-4" style="width: auto; height: 24px; font-size: 12px;">
+                            <option>🌍 Công khai</option>
+                            <option>👥 Bạn bè</option>
+                        </select>
+                    </div>
+                </div>
+
                 <form method="POST" enctype="multipart/form-data">
                     {% csrf_token %}
                     
-                    <div class="mb-3">
-                        <textarea name="content" class="form-control" rows="5" placeholder="Bạn đang nghĩ gì?"></textarea>
-                    </div>
+                    <textarea name="content" class="form-control border-0 fs-5 mb-3" rows="4" 
+                              placeholder="Bạn đang nghĩ gì thế, {{ request.user.username }}?" style="resize: none; box-shadow: none;"></textarea>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Ảnh</label>
-                            <input type="file" name="images" class="form-control" multiple accept="image/*">
+                    <div class="border rounded-3 p-2 mb-3 d-flex justify-content-between align-items-center shadow-sm">
+                        <span class="fw-bold small ps-2">Thêm vào bài viết</span>
+                        <div class="d-flex gap-1">
+                            <label class="btn btn-light rounded-circle text-success" title="Ảnh/Video">
+                                <i class="fas fa-images"></i>
+                                <input type="file" name="images" hidden multiple onchange="alert('Đã chọn ' + this.files.length + ' ảnh')">
+                            </label>
+                            <label class="btn btn-light rounded-circle text-primary" title="Gắn thẻ người khác">
+                                <i class="fas fa-user-tag"></i>
+                                </label>
+                            <label class="btn btn-light rounded-circle text-danger" title="Vị trí">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </label>
+                            <label class="btn btn-light rounded-circle text-info" title="File">
+                                <i class="fas fa-paperclip"></i>
+                                <input type="file" name="files" hidden multiple>
+                            </label>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Tệp đính kèm</label>
-                            <input type="file" name="files" class="form-control" multiple>
-                        </div>
                     </div>
+                    
+                    <input type="hidden" name="privacy" value="public">
 
-                    <div class="mb-3">
-                        <label class="form-label">Quyền riêng tư</label>
-                        <select name="privacy" class="form-select">
-                            <option value="public">Công khai</option>
-                            <option value="friends">Bạn bè</option>
-                            <option value="only_me">Chỉ mình tôi</option>
-                        </select>
-                    </div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">Đăng bài</button>
-                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-3 fw-bold py-2">Đăng</button>
                 </form>
             </div>
         </div>
