@@ -1,16 +1,25 @@
-# apps/posts/urls.py
 from django.urls import path
-from . import views
+from apps.posts.views import *
 
 app_name = "posts"
 
 urlpatterns = [
-    path("", views.feed_view, name="feed"),
-    path("<int:post_id>/", views.post_detail_view, name="post_detail"),
-    path("<int:post_id>/delete/", views.delete_post_view, name="delete_post"),
-    path("<int:post_id>/react/", views.react_post_view, name="react_post"),
+    path("", feed_view, name="feed"),
+    path("public/", public_feed_view, name="public_feed"),
 
-    path("<int:post_id>/comment/", views.create_comment_view, name="create_comment"),
-    path("comment/<int:comment_id>/delete/", views.delete_comment_view, name="delete_comment"),
-    path("comment/<int:comment_id>/react/", views.react_comment_view, name="react_comment"),
+    path("create/", create_post_view, name="create"),
+    path("<int:post_id>/", post_detail_view, name="post_detail"),
+    path("<int:post_id>/edit/", edit_post_view),
+    path("<int:post_id>/delete/", delete_post_view),
+
+    path("<int:post_id>/comment/", create_comment_view),
+    path("comment/<int:comment_id>/edit/", edit_comment_view),
+    path("comment/<int:comment_id>/delete/", delete_comment_view),
+
+    path("<int:post_id>/reaction/", toggle_post_reaction_view),
+    path("comment/<int:comment_id>/reaction/", toggle_comment_reaction_view),
+
+    path("<int:post_id>/share/", share_post_view),
+
+    path("report/", report_view),
 ]

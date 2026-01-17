@@ -197,8 +197,8 @@
         <nav class="nav-menu">
             <div class="nav-item active" onclick="goHome()"><i class="fa-solid fa-house"></i> <span>Home</span></div>
             <div class="nav-item"><i class="fa-solid fa-magnifying-glass"></i> <span>Search</span></div>
-            <div class="nav-item" onclick="explore()"><i class="fa-regular fa-compass"></i> <span>Explore</span></div>
-            <div class="nav-item"><i class="fa-solid fa-user-group"></i> <span>Group</span></div>
+            <div class="nav-item" onclick="friend()"><i class="fa-solid fa-user-group"></i><span>Friend</span></div>
+            <div class="nav-item"><i class="fa-solid fa-people-group"></i> <span>Group</span></div>
             <div class="nav-item"><i class="fa-brands fa-facebook-messenger"></i> <span>Messages</span></div>
             <div class="nav-item"><i class="fa-regular fa-heart"></i> <span>Notifications</span></div>
             <div class="nav-item"><i class="fa-regular fa-square-plus"></i> <span>Create</span></div>
@@ -246,32 +246,15 @@
                         <div class="stat"><strong>{{ following_count|default:"0" }}</strong> following</div>
                     </div>
 
-                    {% if profile.full_name or profile.bio or profile.website %}
                     <div class="info-row-3">
-
-                        {% if profile.full_name %}
-                            <span class="fullname">
-                                {{ profile.full_name }}
-                            </span>
-                        {% endif %}
-
-                        {% if profile.bio %}
-                            <div class="bio">
-                                {{ profile.bio|linebreaksbr }}
-                            </div>
-                        {% endif %}
-
+                        <span class="fullname">{{ profile.full_name }}</span>
+                        <div class="bio">
+                            {{ profile.bio|linebreaksbr }}
+                        </div>
                         {% if profile.website %}
-                            <a href="{{ profile.website }}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style="color:#00376b; font-weight:600;">
-                                {{ profile.website }}
-                            </a>
+                            <a href="{{ profile.website }}" target="_blank" style="color:#00376b; font-weight:600;">{{ profile.website }}</a>
                         {% endif %}
-
                     </div>
-                    {% endif %}
                 </div>
             </header>
 
@@ -382,8 +365,8 @@
         function goHome() {
             window.location.href = "/";
         }
-        // Function to explore
-        function explore() {
+        // Function to friend
+        function friend() {
             window.location.href = "/friends/";
         }
     </script>

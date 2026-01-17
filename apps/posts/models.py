@@ -56,6 +56,8 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    hashtags = models.ManyToManyField("Hashtag", through="PostHashtag", related_name="posts", blank=True)
+
     def soft_delete(self):
         self.is_deleted = True
         self.status = ContentStatus.DELETED
@@ -78,9 +80,26 @@ class PostTagUser(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="tagged_users")
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+class Hashtag(models.Model):
+    tag = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"#{self.tag}"
+
 class PostHashtag(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="hashtags")
-    tag = models.CharField(max_length=50, db_index=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="post_hashtags")
+    hashtag = models.ForeignKey(Hashtag, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("post", "hashtag")
+
+class Location(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="locations")
+    name = models.CharField(max_length=255)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
 
 # =====================
 # COMMENT (MAX DEPTH = 7)
@@ -113,21 +132,36 @@ class Comment(models.Model):
         self.status = ContentStatus.DELETED
         self.save(update_fields=["is_deleted", "status"])
 
+class CommentImage(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="comments/images/")
+    order = models.PositiveIntegerField(default=0)
+
+class CommentFile(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name="files")
+    file = models.FileField(upload_to="comments/files/")
+    filename = models.CharField(max_length=255)
+
 # =====================
 # REACTION (POST + COMMENT)
 # =====================
-class Reaction(models.Model):
+class PostReaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    reaction_type = models.CharField(max_length=10, choices=ReactionType.choices)
-    
-    # Manual Polymorphic (Post or Comment)
-    target_type = models.CharField(max_length=10, choices=ReportTargetType.choices)
-    target_id = models.PositiveIntegerField()
-
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="reactions")
+    reaction_type = models.CharField(max_length=20, choices=ReactionType.choices)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("user", "target_type", "target_id")
+        unique_together = ("user", "post")
+
+class CommentReaction(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name="reactions")
+    reaction_type = models.CharField(max_length=20, choices=ReactionType.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "comment")
 
 # =====================
 # REPORT
@@ -142,9 +176,10 @@ class Report(models.Model):
     target_id = models.PositiveIntegerField()
     reason = models.ForeignKey(ReportReason, on_delete=models.SET_NULL, null=True, blank=True)
     custom_reason = models.TextField(blank=True)
-
+    handled_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="handled_reports")
     status = models.CharField(max_length=20, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
+    handled_at = models.DateTimeField(null=True, blank=True)
 
 # =====================
 # SHARE POST
@@ -154,11 +189,11 @@ class PostShare(models.Model):
     original_post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="shares")
     new_post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="shared_post")
     created_at = models.DateTimeField(auto_now_add=True)
+    caption = models.TextField(blank=True)
+    privacy = models.CharField(max_length=20, choices=PostPrivacy.choices, default=PostPrivacy.PUBLIC)
 
 class Mention(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="mentions")
     mentioned_user = models.ForeignKey(User, on_delete=models.CASCADE)
-    commanet = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True, blank=True)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-class 

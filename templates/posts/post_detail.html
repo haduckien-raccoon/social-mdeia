@@ -1,32 +1,353 @@
-<h2>{{ post.content }}</h2>
+{% extends 'base.html' %}
 
-<button onclick="react('like')">👍</button>
-<button onclick="react('love')">❤️</button>
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        {% include 'posts/includes/post_card.html' %}
 
-<div id="comments">
-  {% for comment in comments %}
-    {% include "posts/comment_recursive.html" with comment=comment %}
-  {% endfor %}
+        <div class="card shadow-sm mt-3">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <strong>Bình luận</strong>
+                <span class="badge bg-secondary" id="total-comments-count">{{ comments.count }}</span>
+            </div>
+            <div class="card-body">
+                {% if post.is_comment_enabled %}
+                <form id="main-comment-form" class="mb-4 d-flex gap-2">
+                    <input type="text" id="comment-content" class="form-control rounded-pill bg-light" placeholder="Viết bình luận công khai..." autocomplete="off">
+                    <button type="button" class="btn btn-primary rounded-circle shadow-sm" onclick="submitComment()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+                {% else %}
+                    <div class="alert alert-warning text-center small"><i class="fas fa-lock me-2"></i>Tính năng bình luận đã bị tắt.</div>
+                {% endif %}
+
+                <div id="comments-list">
+                    {% for comment in comments %}
+                    <div class="d-flex mb-3 comment-item fade-in" 
+                         style="margin-left: {{ comment.index_px }}px;" 
+                         id="comment-{{ comment.id }}">
+                        
+                        <div class="flex-shrink-0 me-2">
+                            <div class="bg-secondary rounded-circle text-white d-flex justify-content-center align-items-center shadow-sm" 
+                                 style="width: 32px; height: 32px; font-size: 12px; font-weight: bold;">
+                                {{ comment.user.username|slice:":1"|upper }}
+                            </div>
+                        </div>
+
+                        <div class="flex-grow-1">
+                            <div class="bg-light p-2 px-3 rounded-3 d-inline-block" style="min-width: 150px;">
+                                <div class="d-flex justify-content-between align-items-baseline">
+                                    <strong class="small me-2">{{ comment.user.username }}</strong>
+                                    <small class="text-muted" style="font-size: 0.7rem;">{{ comment.created_at|date:"d/m H:i" }}</small>
+                                </div>
+                                <p class="mb-0 small text-break">{{ comment.content }}</p>
+                                
+                                <div class="d-flex align-items-center mt-1 {% if comment.reactions.count == 0 %}d-none{% endif %}" id="comment-reactions-display-{{ comment.id }}">
+                                    <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center me-1" style="width: 16px; height: 16px;">
+                                        <i class="fas fa-thumbs-up text-primary" style="font-size: 8px;"></i>
+                                    </div>
+                                    <span class="text-muted small" style="font-size: 0.75rem;" id="comment-count-{{ comment.id }}">{{ comment.reactions.count }}</span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-3 ms-2 mt-1 small">
+                                <a href="#" 
+                                   id="btn-comment-like-{{ comment.id }}"
+                                   class="text-decoration-none fw-bold {% if comment.current_reaction %}text-primary{% else %}text-muted{% endif %}"
+                                   onclick="toggleCommentReaction({{ comment.id }}); return false;">
+                                   {% if comment.current_reaction == 'love' %}Yêu thích
+                                   {% elif comment.current_reaction == 'haha' %}Haha
+                                   {% elif comment.current_reaction %}Thích
+                                   {% else %}Thích{% endif %}
+                                </a>
+
+                                <a href="#" class="text-decoration-none text-muted fw-bold" onclick="showReplyForm({{ comment.id }}); return false;">Trả lời</a>
+                                
+                                {% if request.user == comment.user %}
+                                <a href="#" class="text-decoration-none text-danger fw-bold" onclick="deleteComment({{ comment.id }}); return false;">Xóa</a>
+                                {% endif %}
+                            </div>
+
+                            <div id="reply-form-{{ comment.id }}" class="mt-2 d-none fade-in">
+                                <div class="d-flex gap-2 align-items-center">
+                                    <div class="bg-secondary rounded-circle text-white d-flex justify-content-center align-items-center" style="width: 24px; height: 24px; font-size: 10px;">
+                                        {{ request.user.username|slice:":1"|upper }}
+                                    </div>
+                                    <input type="text" id="reply-input-{{ comment.id }}" class="form-control form-control-sm rounded-pill" placeholder="Viết câu trả lời...">
+                                    <button class="btn btn-sm btn-primary rounded-pill px-3" onclick="submitComment({{ comment.id }})">Gửi</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<input id="content">
-<button onclick="send()">Comment</button>
+<style>
+    .fade-in { animation: fadeIn 0.4s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+{% endblock %}
 
+{% block scripts %}
 <script>
-const ws = new WebSocket(
-  'ws://' + window.location.host + '/ws/posts/{{ post.id }}/'
-);
+    // --- CẤU HÌNH ---
+    const POST_ID = "{{ post.id }}";
+    const CURRENT_USER = "{{ request.user.username }}";
+    
+    // Config hiển thị màu sắc cảm xúc
+    const REACTION_CONFIG = {
+        'like':  { icon: 'fa-thumbs-up', colorClass: 'text-primary', label: 'Thích' },
+        'love':  { icon: 'fa-heart',     colorClass: 'text-danger',  label: 'Yêu thích' },
+        'haha':  { icon: 'fa-laugh-squint', colorClass: 'text-warning', label: 'Haha' },
+        'wow':   { icon: 'fa-surprise',  colorClass: 'text-warning', label: 'Wow' },
+        'sad':   { icon: 'fa-sad-tear',  colorClass: 'text-warning', label: 'Buồn' },
+        'angry': { icon: 'fa-angry',     colorClass: 'text-danger',  label: 'Phẫn nộ' }
+    };
 
-ws.onmessage = e => location.reload();
+    // --- WEBSOCKET CONNECTION ---
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const chatSocket = new WebSocket(
+        wsScheme + '://' + window.location.host + '/ws/post/' + POST_ID + '/'
+    );
 
-function react(type){
-  ws.send(JSON.stringify({action:'react_post', reaction:type}));
-}
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const payload = data.data;
 
-function send(){
-  ws.send(JSON.stringify({
-    action:'comment',
-    content:document.getElementById('content').value
-  }));
-}
+        // 1. EVENT: Post Reaction (Like bài viết)
+        if (data.type === 'post_reaction') {
+            updatePostReactionUI(payload);
+        }
+
+        // 2. EVENT: Comment Reaction (Like bình luận)
+        if (data.type === 'comment_reaction') {
+            updateCommentReactionUI(payload);
+        }
+
+        // 3. EVENT: New Comment (Bình luận mới)
+        if (data.type === 'comment_created') {
+            appendNewComment(payload);
+        }
+        
+        // 4. EVENT: Delete Comment (Xóa bình luận)
+        // (Nếu bạn đã implement logic gửi socket khi xóa)
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('WebSocket closed unexpectedly');
+    };
+
+    // --- UI UPDATERS ---
+
+    // Xử lý UI cho Post (Dùng chung logic với post_card nhưng update qua socket)
+    function updatePostReactionUI(payload) {
+        const countSpan = document.getElementById(`reaction-count-${payload.post_id}`);
+        if (countSpan) countSpan.innerText = payload.count;
+
+        if (payload.user === CURRENT_USER) {
+            // Logic đổi màu nút Post Like đã có trong feed.html/post_card.html
+            // Gọi lại hàm updateButtonUI nếu nó khả dụng, hoặc viết lại logic đơn giản ở đây
+            const btn = document.getElementById(`btn-post-like-${payload.post_id}`);
+            const textSpan = document.getElementById(`text-post-like-${payload.post_id}`);
+            
+            if (payload.status === 'removed') {
+                updateButtonVisuals(btn, textSpan, null, false);
+            } else {
+                updateButtonVisuals(btn, textSpan, payload.reaction_type, true);
+            }
+        }
+    }
+
+    // Xử lý UI cho Comment
+    function updateCommentReactionUI(payload) {
+        // Cập nhật số lượng
+        const countDisplay = document.getElementById(`comment-reactions-display-${payload.comment_id}`);
+        const countSpan = document.getElementById(`comment-count-${payload.comment_id}`);
+        
+        if (payload.count > 0) {
+            countDisplay.classList.remove('d-none');
+            countSpan.innerText = payload.count;
+        } else {
+            countDisplay.classList.add('d-none');
+        }
+
+        // Cập nhật màu nút nếu là chính mình
+        if (payload.user === CURRENT_USER) {
+            const btn = document.getElementById(`btn-comment-like-${payload.comment_id}`);
+            if (btn) {
+                if (payload.status === 'removed') {
+                    btn.className = "text-decoration-none text-muted fw-bold";
+                    btn.innerText = "Thích";
+                } else {
+                    const config = REACTION_CONFIG[payload.reaction_type] || REACTION_CONFIG['like'];
+                    btn.className = `text-decoration-none fw-bold ${config.colorClass}`;
+                    btn.innerText = config.label;
+                }
+            }
+        }
+    }
+
+    // Thêm bình luận mới vào DOM
+    function appendNewComment(data) {
+        const indentPixels = (data.level - 1) * 30;
+        
+        const html = `
+        <div class="d-flex mb-3 comment-item fade-in" style="margin-left: ${indentPixels}px;" id="comment-${data.id}">
+            <div class="flex-shrink-0 me-2">
+                <div class="bg-secondary rounded-circle text-white d-flex justify-content-center align-items-center shadow-sm" 
+                     style="width: 32px; height: 32px; font-size: 12px; font-weight: bold;">
+                    ${data.user_initial}
+                </div>
+            </div>
+            <div class="flex-grow-1">
+                <div class="bg-light p-2 px-3 rounded-3 d-inline-block" style="min-width: 150px;">
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <strong class="small me-2">${data.user}</strong>
+                        <small class="text-muted" style="font-size: 0.7rem;">Vừa xong</small>
+                    </div>
+                    <p class="mb-0 small text-break">${data.content}</p>
+                    <div class="d-flex align-items-center mt-1 d-none" id="comment-reactions-display-${data.id}">
+                         <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center me-1" style="width: 16px; height: 16px;">
+                            <i class="fas fa-thumbs-up text-primary" style="font-size: 8px;"></i>
+                        </div>
+                        <span class="text-muted small" style="font-size: 0.75rem;" id="comment-count-${data.id}">0</span>
+                    </div>
+                </div>
+                <div class="d-flex gap-3 ms-2 mt-1 small">
+                    <a href="#" id="btn-comment-like-${data.id}" class="text-decoration-none text-muted fw-bold" 
+                       onclick="toggleCommentReaction(${data.id}); return false;">Thích</a>
+                    <a href="#" class="text-decoration-none text-muted fw-bold" onclick="showReplyForm(${data.id}); return false;">Trả lời</a>
+                </div>
+                <div id="reply-form-${data.id}" class="mt-2 d-none fade-in">
+                    <div class="d-flex gap-2 align-items-center">
+                         <div class="bg-secondary rounded-circle text-white d-flex justify-content-center align-items-center" style="width: 24px; height: 24px; font-size: 10px;">
+                            {{ request.user.username|slice:":1"|upper }}
+                        </div>
+                        <input type="text" id="reply-input-${data.id}" class="form-control form-control-sm rounded-pill" placeholder="Viết câu trả lời...">
+                        <button class="btn btn-sm btn-primary rounded-pill px-3" onclick="submitComment(${data.id})">Gửi</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        // Logic chèn: Nếu là reply, chèn ngay sau comment cha. Nếu là gốc, chèn cuối.
+        if (data.parent_id) {
+            const parentEl = document.getElementById(`comment-${data.parent_id}`);
+            if (parentEl) parentEl.insertAdjacentHTML('afterend', html);
+        } else {
+            document.getElementById('comments-list').insertAdjacentHTML('beforeend', html);
+            // Scroll xuống dưới cùng nếu là comment mới của mình
+            if (data.user === CURRENT_USER) {
+                // document.getElementById('comments-list').lastElementChild.scrollIntoView({behavior: 'smooth'});
+            }
+        }
+    }
+
+    // --- API ACTIONS (FETCH) ---
+
+    // 1. Submit Comment
+    function submitComment(parentId = null) {
+        const inputId = parentId ? `reply-input-${parentId}` : 'comment-content';
+        const inputEl = document.getElementById(inputId);
+        const content = inputEl.value.trim();
+
+        if (!content) return;
+
+        let formData = new FormData();
+        formData.append('content', content);
+        if (parentId) formData.append('parent_id', parentId);
+
+        // Reset input ngay lập tức (Optimistic)
+        inputEl.value = '';
+        if (parentId) document.getElementById(`reply-form-${parentId}`).classList.add('d-none');
+
+        fetch(`/posts/${POST_ID}/comment/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken },
+            body: formData
+        }).catch(err => console.error(err));
+    }
+
+    // 2. Toggle Comment Reaction
+    function toggleCommentReaction(commentId) {
+        // Mặc định click là 'like'. Nếu muốn popup thì cần HTML phức tạp hơn.
+        fetch(`/posts/comment/${commentId}/reaction/`, {
+            method: 'POST',
+            headers: { 
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `reaction=like`
+        });
+        // Không cần xử lý .then() vì WebSocket sẽ trả về kết quả để update UI
+    }
+
+    // 3. Delete Comment
+    function deleteComment(commentId) {
+        if(!confirm('Bạn có chắc muốn xóa bình luận này?')) return;
+        
+        fetch(`/posts/comment/${commentId}/delete/`, {
+            method: 'POST', 
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                const el = document.getElementById(`comment-${commentId}`);
+                if(el) {
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 300);
+                }
+            }
+        });
+    }
+
+    // 4. Toggle Post Reaction (Nếu người dùng bấm ở post_card được include)
+    // Lưu ý: post_card.html đã gọi hàm toggleReaction. Ta cần đảm bảo hàm đó tồn tại.
+    // Nếu trong post_card không có script, ta định nghĩa ở đây.
+    
+    // Copy logic Helper từ post_card để dùng chung
+    function updateButtonVisuals(btn, textSpan, type, isActive) {
+        btn.className = "btn btn-light w-100 py-2 border-0 rounded-3";
+        const iconTag = btn.querySelector('i');
+        iconTag.className = "me-1"; 
+
+        if (!isActive) {
+            btn.classList.add('text-muted');
+            iconTag.classList.add('far', 'fa-thumbs-up'); 
+            if(textSpan) textSpan.innerText = "Thích";
+        } else {
+            const config = REACTION_CONFIG[type] || REACTION_CONFIG['like'];
+            btn.classList.add('fw-bold', config.colorClass); 
+            iconTag.classList.add('fas', config.icon, config.colorClass); 
+            if(textSpan) textSpan.innerText = config.label;
+        }
+    }
+    
+    // Hàm này được gọi từ onClick trong post_card.html
+    function toggleReaction(postId, type = 'like') {
+        fetch(`/posts/${postId}/reaction/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `reaction=${type}`
+        });
+    }
+
+    // Helper UI: Show Reply Form
+    function showReplyForm(commentId) {
+        document.querySelectorAll('[id^="reply-form-"]').forEach(el => el.classList.add('d-none'));
+        const form = document.getElementById(`reply-form-${commentId}`);
+        form.classList.remove('d-none');
+        // Auto focus
+        setTimeout(() => form.querySelector('input').focus(), 100);
+    }
 </script>
+{% endblock %}

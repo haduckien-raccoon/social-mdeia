@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Chỉnh sửa bài viết</div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <textarea name="content" class="form-control" rows="5">{{ post.content }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Quyền riêng tư</label>
+                        <select name="privacy" class="form-select">
+                            <option value="public" {% if post.privacy == 'public' %}selected{% endif %}>Công khai</option>
+                            <option value="friends" {% if post.privacy == 'friends' %}selected{% endif %}>Bạn bè</option>
+                            <option value="only_me" {% if post.privacy == 'only_me' %}selected{% endif %}>Chỉ mình tôi</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">Lưu thay đổi</button>
+                    <a href="{% url 'posts:feed' %}" class="btn btn-secondary">Hủy</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends 'base.html' %} 
+{% load friend_tags %}
+
+{% block title %}Suggestions • SUDO{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* CSS đồng bộ */
+    :root { --sidebar-width: 245px; --content-width: 935px; --bg-body: #fafafa; }
+    .main-content { margin-left: var(--sidebar-width) !important; padding: 30px 20px; display: flex; justify-content: center; min-height: 100vh; background-color: var(--bg-body); }
+    .container { width: 100%; max-width: var(--content-width); }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .section-header h3 { font-size: 20px; font-weight: 600; color: #262626; }
+    .back-link { color: #0095f6; font-weight: 600; text-decoration: none; font-size: 14px; }
+    .back-link:hover { text-decoration: underline; }
+    .grid-friends { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+    .card { background: #fff; border: 1px solid #dbdbdb; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .card img { width: 100%; height: 200px; object-fit: cover; background: #f0f2f5; }
+    .info { padding: 15px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+    .info b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .info b a { text-decoration: none; color: #262626; }
+    .btn { border: none; padding: 8px 0; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; font-size: 13px; transition: 0.2s; text-align: center; }
+    .btn-blue { background: #0095f6; color: white; }
+    .btn-grey { background: #efefef; color: black; }
+    .btn-grey:hover { background: #dbdbdb; }
+    .mutual-info { font-size: 12px; color: #8e8e8e; margin-bottom: 5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="section-header">
+            <h3>People You May Know</h3>
+            <a href="{% url 'friends:index' %}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        </div>
+        
+        <div class="grid-friends">
+            {% for user in suggestions %}
+            <div class="card">
+                <img src="{{ user|get_avatar }}" alt="avatar">
+                <div class="info">
+                    <b><a href="/accounts/profile/{{ user.id }}">{{ user.username }}</a></b>
+                    
+                    <div class="mutual-info">
+                        {% if user.mutual_count > 0 %}
+                            {{ user.mutual_count }} mutual friends
+                        {% else %}
+                            Suggested for you
+                        {% endif %}
+                    </div>
+                    
+                    <button 
+                        class="btn btn-blue btn-ajax-action" 
+                        style="width:100%; margin-top:auto;"
+                        data-user-id="{{ user.id }}"
+                        data-action="send"
+                    >Add Friend</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const buttons = document.querySelectorAll('.btn-ajax-action');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                
+                if (action === 'send') {
+                    const userId = this.getAttribute('data-user-id');
+                    this.textContent = '...';
+                    this.disabled = true;
+
+                    fetch(`/friends/api/send/${userId}/`, {
+                        method: 'POST',
+                        headers: {'X-CSRFToken': '{{ csrf_token }}','Content-Type': 'application/json'}
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.disabled = false;
+                        if (data.status === 'success') {
+                            this.textContent = 'Cancel Request';
+                            this.classList.remove('btn-blue');
+                            this.classList.add('btn-grey');
+                            this.setAttribute('data-action', 'cancel');
+                            this.setAttribute('data-request-id', data.request_id);
+                        } else {
+                            this.textContent = 'Add Friend';
+                            alert(data.message);
+                        }
+                    });
+                } else if (action === 'cancel') {
+                    const reqId = this.getAttribute('data-request-id');
+                    this.textContent = '...';
+                    this.disabled = true;
+
+                    fetch(`/friends/api/cancel/${reqId}/`, {
+                        method: 'POST',
+                        headers: {'X-CSRFToken': '{{ csrf_token }}','Content-Type': 'application/json'}
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.disabled = false;
+                        if (data.status === 'success') {
+                            this.textContent = 'Add Friend';
+                            this.classList.remove('btn-grey');
+                            this.classList.add('btn-blue');
+                            this.setAttribute('data-action', 'send');
+                        } else {
+                            this.textContent = 'Cancel Request';
+                            alert(data.message);
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
