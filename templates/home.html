@@ -200,7 +200,7 @@
             <div class="nav-item"><i class="fa-solid fa-people-group"></i> <span>Group</span></div>
             <div class="nav-item"><i class="fa-brands fa-facebook-messenger"></i> <span>Messages</span></div>
             <div class="nav-item"><i class="fa-regular fa-heart"></i> <span>Notifications</span></div>
-            <div class="nav-item"><i class="fa-regular fa-square-plus"></i> <span>Create</span></div>
+            <div class="nav-item" onclick="create()"><i class="fa-regular fa-square-plus"></i> <span>Create</span></div>
             <div class="nav-item" onclick="profile()">
                 <i class="fa-solid fa-circle-user"></i> <span>{{ user.username }}</span>
             </div>
@@ -224,6 +224,10 @@
         //friend
         function friend() {
             window.location.href = "/friends/";
+        }
+        //create post
+        function create() {
+            window.location.href = "/posts/create/";
         }
     </script>
 </body>

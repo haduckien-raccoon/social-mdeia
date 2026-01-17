@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Tạo bài viết mới</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <textarea name="content" class="form-control" rows="5" placeholder="Bạn đang nghĩ gì?"></textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ảnh</label>
+                            <input type="file" name="images" class="form-control" multiple accept="image/*">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tệp đính kèm</label>
+                            <input type="file" name="files" class="form-control" multiple>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Quyền riêng tư</label>
+                        <select name="privacy" class="form-select">
+                            <option value="public">Công khai</option>
+                            <option value="friends">Bạn bè</option>
+                            <option value="only_me">Chỉ mình tôi</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Đăng bài</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

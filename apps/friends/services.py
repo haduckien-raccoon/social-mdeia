@@ -194,4 +194,3 @@ def get_friend_status_detail(user, target_user):
         }
 
     return {"status": "none"}
-
