@@ -11,16 +11,11 @@ from asgiref.sync import async_to_sync
 
 def send_ws_message(group_name, message_type, data):
     channel_layer = get_channel_layer()
-    if channel_layer is not None:
+    if channel_layer:
         async_to_sync(channel_layer.group_send)(
             group_name,
-            {
-                "type": message_type,
-                "data": data
-            }
+            {"type": message_type, "data": data}
         )
-    else:
-        print("Channel layer is not available")
 
 def require_owner(user, obj):
     if obj.author != user:
@@ -82,10 +77,9 @@ def create_post(
     # Tagged users
     # =====================
     if tagged_users:
-        PostTagUser.objects.bulk_create([
-            PostTagUser(post=post, user=user)
-            for user in tagged_users
-        ], ignore_conflicts=True)
+        for uid in tagged_users:
+            if Friend.objects.filter(user=user, friend_id=uid).exists():
+                PostTagUser.objects.create(post=post, user_id=uid)
 
     # =====================
     # Hashtags
@@ -130,17 +124,15 @@ def delete_post(user, post):
     post.soft_delete()
 
 def toggle_comments(post, user, enable: bool):
-    require_owner(user, post)
+    if post.author != user: raise PermissionDenied()
     post.is_comment_enabled = enable
     post.save(update_fields=["is_comment_enabled"])
     return post
 
 def toggle_hide_counts(post, user, hide_comment=None, hide_reaction=None):
-    require_owner(user, post)
-    if hide_comment is not None:
-        post.hide_comment_count = hide_comment
-    if hide_reaction is not None:
-        post.hide_reaction_count = hide_reaction
+    if post.author != user: raise PermissionDenied()
+    if hide_comment is not None: post.hide_comment_count = hide_comment
+    if hide_reaction is not None: post.hide_reaction_count = hide_reaction
     post.save()
     return post
 
@@ -168,6 +160,18 @@ def create_comment(user, post, content, parent=None, images=None, files=None):
         for file in files:
             CommentFile.objects.create(comment=comment, file=file, filename=file.name)
 
+    img_urls = []
+    if images:
+        for i, img in enumerate(images):
+            obj = CommentImage.objects.create(comment=comment, image=img, order=i)
+            img_urls.append(obj.image.url)
+            
+    file_urls = []
+    if files:
+        for f in files:
+            obj = CommentFile.objects.create(comment=comment, file=f, filename=f.name)
+            file_urls.append({"url": obj.file.url, "name": obj.filename})
+
     send_ws_message(f"post_{post.id}", "comment_created", {
         "id": comment.id,
         "content": comment.content,
@@ -175,92 +179,95 @@ def create_comment(user, post, content, parent=None, images=None, files=None):
         "user_initial": comment.user.username[0].upper(),
         "created_at": comment.created_at.strftime("%d/%m %H:%M"),
         "parent_id": parent.id if parent else None,
-        "level": comment.level
+        "level": comment.level,
+        "images": img_urls,
+        "files": file_urls
     })
-
     return comment
 
 def update_comment(user, comment, content):
-    require_comment_owner(user, comment)
+    if comment.user != user: raise PermissionDenied()
     comment.content = content
-    comment.updated_at = timezone.now()
-    comment.save()
-    return comment
+    comment.save(update_fields=["content", "updated_at"])
+
+    send_ws_message(f"post_{comment.post.id}", "comment_updated", {
+        "comment_id": comment.id,
+        "content": content
+    })
 
 def delete_comment(user, comment):
-    require_comment_owner(user, comment)
-    comment.soft_delete()
+    # Chỉ chủ comment HOẶC chủ bài viết mới được xóa
+    if comment.user != user and comment.post.author != user:
+        raise PermissionDenied()
+    
+    post_id = comment.post.id
+    comment_id = comment.id
+    comment.soft_delete() # Soft delete
+
+    send_ws_message(f"post_{post_id}", "comment_deleted", {
+        "comment_id": comment_id
+    })
 
 def toggle_post_reaction(user, post, reaction_type):
-    # 1. Tìm hoặc tạo reaction
-    reaction, created = PostReaction.objects.get_or_create(
-        user=user,
-        post=post,
-        defaults={'reaction_type': reaction_type}
-    )
+    # Dùng Atomic để tránh race condition khi spam click
+    with transaction.atomic():
+        reaction = PostReaction.objects.filter(user=user, post=post).select_for_update().first()
+        
+        status = "added"
+        current_type = reaction_type
 
-    status = "added"
-    current_reaction = reaction_type # Loại reaction hiện tại của user
-
-    # 2. Xử lý logic
-    if not created:
-        if reaction.reaction_type == reaction_type:
-            # Nếu bấm lại đúng icon đó -> Xóa (Unlike)
-            reaction.delete()
-            status = "removed"
-            current_reaction = None
+        if reaction:
+            if reaction.reaction_type == reaction_type:
+                reaction.delete()
+                status = "removed"
+                current_type = None
+            else:
+                reaction.reaction_type = reaction_type
+                reaction.save()
+                status = "changed"
         else:
-            # Nếu bấm icon khác -> Đổi (Change)
-            reaction.reaction_type = reaction_type
-            reaction.save(update_fields=['reaction_type'])
-            status = "changed"
-            current_reaction = reaction_type
+            PostReaction.objects.create(user=user, post=post, reaction_type=reaction_type)
 
-    # 3. Tính lại count SAU KHI đã thay đổi DB
-    count = post.reactions.count()
+        # Tính lại count ngay lập tức
+        count = PostReaction.objects.filter(post=post).count()
 
-    # 4. Gửi WebSocket
+    # Broadcast WebSocket
     send_ws_message(f"post_{post.id}", "post_reaction", {
         "post_id": post.id,
         "status": status,
         "user": user.username,
-        "reaction_type": current_reaction, # Gửi loại reaction hiện tại (hoặc None)
+        "reaction_type": current_type,
         "count": count
     })
-    
     return status
 
 def toggle_comment_reaction(user, comment, reaction_type):
-    reaction, created = CommentReaction.objects.get_or_create(
-        user=user,
-        comment=comment,
-        defaults={'reaction_type': reaction_type}
-    )
+    with transaction.atomic():
+        reaction = CommentReaction.objects.filter(user=user, comment=comment).select_for_update().first()
+        status = "added"
+        current_type = reaction_type
 
-    status = "added"
-    current_reaction = reaction_type
-
-    if not created:
-        if reaction.reaction_type == reaction_type:
-            reaction.delete()
-            status = "removed"
-            current_reaction = None
+        if reaction:
+            if reaction.reaction_type == reaction_type:
+                reaction.delete()
+                status = "removed"
+                current_type = None
+            else:
+                reaction.reaction_type = reaction_type
+                reaction.save()
+                status = "changed"
         else:
-            reaction.reaction_type = reaction_type
-            reaction.save(update_fields=['reaction_type'])
-            status = "changed"
-            current_reaction = reaction_type
+            CommentReaction.objects.create(user=user, comment=comment, reaction_type=reaction_type)
 
-    count = comment.reactions.count()
+        count = CommentReaction.objects.filter(comment=comment).count()
 
     send_ws_message(f"post_{comment.post.id}", "comment_reaction", {
         "comment_id": comment.id,
         "status": status,
         "user": user.username,
-        "reaction_type": current_reaction,
+        "reaction_type": current_type,
         "count": count
     })
-    
     return status
 
 @transaction.atomic

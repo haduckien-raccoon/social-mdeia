@@ -6,4 +6,12 @@ PyJWT
 Pillow
 pytz
 tzdata
-
+channels
+channels-redis
+asgiref
+redis
+django-cors-headers
+djangorestframework-simplejwt
+django-filter
+django-celery-beat
+django-celery-results
