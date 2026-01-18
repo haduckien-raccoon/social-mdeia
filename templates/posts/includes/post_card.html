@@ -1,178 +1,519 @@
-<style>
-    /* CSS Riêng cho Post Card */
-    .post-header { padding: 15px; }
-    .post-content { padding: 5px 15px 15px 15px; font-size: 15px; line-height: 1.5; color: #1c1e21; }
-    
-    /* Reaction Bar Style */
-    .action-btn {
-        color: #65676b;
-        font-weight: 600;
-        font-size: 14px;
-        padding: 8px 0;
-        border-radius: 6px;
-        transition: 0.2s;
-    }
-    .action-btn:hover { background-color: #f2f2f2; color: #4b4c4f; }
-    .action-btn.active { color: var(--primary-color); }
-    
-    /* Popup Reaction nổi lên đẹp hơn */
-    .reaction-container { position: relative; }
-    .reaction-popup {
-        position: absolute; bottom: 120%; left: 0;
-        background: white; border-radius: 50px;
-        padding: 6px 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        display: flex; gap: 8px;
-        opacity: 0; visibility: hidden;
-        transform: translateY(10px);
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        z-index: 99;
-    }
-    .reaction-container:hover .reaction-popup {
-        opacity: 1; visibility: visible; transform: translateY(0);
-    }
-    .reaction-icon-anim {
-        font-size: 24px; transition: 0.2s; cursor: pointer;
-    }
-    .reaction-icon-anim:hover { transform: scale(1.4) translateY(-3px); }
 
-    /* Grid ảnh đơn giản */
-    .post-images-grid {
-        display: grid; gap: 2px;
-        grid-template-columns: repeat(auto-fit, minmax(49%, 1fr));
-        overflow: hidden;
-        border-top: 1px solid #eee; border-bottom: 1px solid #eee;
-    }
-    .post-img-item {
-        width: 100%; height: 300px; object-fit: cover;
-        cursor: pointer; transition: 0.2s;
-    }
-    .post-img-item:hover { opacity: 0.95; }
-</style>
-
-<div class="card-modern" id="post-{{ post.id }}">
-    <div class="post-header d-flex justify-content-between align-items-start">
-        <div class="d-flex align-items-center">
-            <a href="#">
-                <img src="https://ui-avatars.com/api/?name={{ post.author.username }}&background=random" 
-                     class="avatar-circle me-2" width="40" height="40">
-            </a>
-            <div>
-                <h6 class="mb-0 fw-bold"><a href="#" class="text-dark">{{ post.author.username }}</a></h6>
-                <div class="text-muted small">
-                    {{ post.created_at|date:"d/m H:i" }} · 
-                    {% if post.privacy == 'public' %}<i class="fas fa-earth-americas" title="Công khai"></i>
-                    {% elif post.privacy == 'friends' %}<i class="fas fa-user-friends" title="Bạn bè"></i>
-                    {% else %}<i class="fas fa-lock" title="Chỉ mình tôi"></i>{% endif %}
+<div class="card mb-3 border-0 shadow-sm" id="post-{{ post.id }}">
+    <!-- Post Header -->
+    <div class="card-header bg-white border-0 pb-0">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <img src="{{ post.author.userprofile.avatar.url|default:'https://ui-avatars.com/api/?name='|add:post.author.username }}" 
+                     class="rounded-circle me-2" width="40" height="40">
+                <div>
+                    <a href="#" class="fw-bold text-decoration-none text-dark">{{ post.author.username }}</a>
+                    <div class="small text-muted">
+                        {{ post.created_at|timesince }} trước
+                        {% if post.privacy == 'public' %}
+                            <i class="fas fa-globe-americas"></i>
+                        {% elif post.privacy == 'friends' %}
+                            <i class="fas fa-user-friends"></i>
+                        {% else %}
+                            <i class="fas fa-lock"></i>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
+            
+            {% if request.user == post.author %}
+            <div class="dropdown">
+                <button class="btn btn-link text-muted" data-bs-toggle="dropdown">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'posts:post_detail' post.id %}edit/">
+                        <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="deletePost({{ post.id }}); return false;">
+                        <i class="fas fa-trash me-2"></i>Xóa
+                    </a></li>
+                </ul>
+            </div>
+            {% endif %}
         </div>
-        
-        {% if request.user == post.author %}
-        <div class="dropdown">
-            <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="fas fa-ellipsis"></i></button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                <li><a class="dropdown-item" href="/posts/{{ post.id }}/edit/"><i class="fas fa-pen me-2"></i>Sửa bài</a></li>
-                <li><a class="dropdown-item text-danger" href="/posts/{{ post.id }}/delete/" onclick="return confirm('Xóa bài này?')"><i class="fas fa-trash me-2"></i>Xóa bài</a></li>
-            </ul>
+    </div>
+
+    <!-- Post Content -->
+    <div class="card-body">
+        {% if post.content %}
+        <p class="card-text">{{ post.content|linebreaks }}</p>
+        {% endif %}
+
+        <!-- Post Images -->
+        {% if post.images.all %}
+        <div class="row g-2 mb-2">
+            {% for image in post.images.all %}
+            <div class="col-{% if post.images.count == 1 %}12{% elif post.images.count == 2 %}6{% else %}4{% endif %}">
+                <img src="{{ image.image.url }}" class="img-fluid rounded" style="width: 100%; object-fit: cover; max-height: 400px;">
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Post Files -->
+        {% if post.files.all %}
+        <div class="mb-2">
+            {% for file in post.files.all %}
+            <div class="border rounded p-2 mb-1">
+                <i class="fas fa-file-alt me-2"></i>
+                <a href="{{ file.file.url }}" download>{{ file.filename }}</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Tagged Users -->
+        {% if post.tagged_users.all %}
+        <div class="small text-muted mb-2">
+            <i class="fas fa-user-tag me-1"></i>
+            Cùng với
+            {% for tag in post.tagged_users.all %}
+                <a href="#" class="text-decoration-none">{{ tag.user.username }}</a>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Location -->
+        {% if post.locations.first %}
+        <div class="small text-muted mb-2">
+            <i class="fas fa-map-marker-alt me-1"></i>
+            {{ post.locations.first.name }}
         </div>
         {% endif %}
     </div>
 
-    <div class="post-content">
-        {{ post.content|linebreaksbr }}
-    </div>
-
-    {% if post.images.all %}
-    <div class="post-images-grid">
-        {% for img in post.images.all|slice:":4" %}
-        <img src="{{ img.image.url }}" class="post-img-item">
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if post.files.all %}
-    <div class="px-3 pb-3">
-        {% for f in post.files.all %}
-        <div class="p-2 mt-2 bg-light border rounded d-flex align-items-center">
-            <i class="fas fa-file-alt text-primary fs-4 me-3"></i>
-            <div>
-                <a href="{{ f.file.url }}" target="_blank" class="fw-bold text-dark d-block">{{ f.filename }}</a>
-                <small class="text-muted">Tệp đính kèm</small>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <div class="px-3 py-2 d-flex justify-content-between align-items-center text-muted small border-bottom">
-        <div class="d-flex align-items-center">
-            {% if post.reactions.count > 0 %}
-            <span class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-1" style="width:18px; height:18px;">
-                <i class="fas fa-thumbs-up" style="font-size:10px;"></i>
+    <!-- Post Stats -->
+    <div class="card-footer bg-white border-0 pt-0">
+        <div class="d-flex justify-content-between text-muted small mb-2">
+            <span>
+                {% if not post.hide_reaction_count %}
+                <i class="fas fa-thumbs-up text-primary"></i>
+                <span id="reaction-count-{{ post.id }}">
+                    {{ post.reaction_count|default:post.reactions.count }}
+                </span>
+                {% endif %}
             </span>
-            <span id="reaction-count-{{ post.id }}">{{ post.reactions.count }}</span>
-            {% endif %}
+            <span>
+                {% if not post.hide_comment_count %}
+                <span id="comment-count-{{ post.id }}">
+                    {{ post.comment_count|default:post.comments.count }}
+                </span> bình luận
+                {% endif %}
+            </span>
         </div>
-        <div>
-            <a href="{% url 'posts:post_detail' post.id %}" class="text-muted">{{ post.comments.count }} bình luận</a>
-        </div>
-    </div>
 
-    <div class="d-flex px-2 py-1">
-        <div class="col-4 px-1 reaction-container">
-            <div class="reaction-popup">
-                <span class="reaction-icon-anim" onclick="toggleReaction({{ post.id }}, 'like')">👍</span>
-                <span class="reaction-icon-anim" onclick="toggleReaction({{ post.id }}, 'love')">❤️</span>
-                <span class="reaction-icon-anim" onclick="toggleReaction({{ post.id }}, 'haha')">😆</span>
-                <span class="reaction-icon-anim" onclick="toggleReaction({{ post.id }}, 'wow')">😮</span>
-                <span class="reaction-icon-anim" onclick="toggleReaction({{ post.id }}, 'sad')">😢</span>
-                <span class="reaction-icon-anim" onclick="toggleReaction({{ post.id }}, 'angry')">😡</span>
+        <hr>
+
+        <!-- Action Buttons -->
+        <div class="row g-2 text-center">
+            <!-- Like Button -->
+            <div class="col-4">
+                <div class="position-relative">
+                    <button class="btn w-100 reaction-btn {% if post.current_user_reaction %}reaction-active{% else %}text-muted{% endif %}" 
+                            id="btn-post-like-{{ post.id }}"
+                            onclick="showReactionPicker({{ post.id }})"
+                            onmouseover="delayShowReactions({{ post.id }})"
+                            onmouseout="hideReactions({{ post.id }})">
+                        <i class="fas fa-thumbs-up me-1"></i>
+                        <span id="text-post-like-{{ post.id }}">
+                            {% if post.current_user_reaction %}
+                                {% if post.current_user_reaction == 'like' %}Thích
+                                {% elif post.current_user_reaction == 'love' %}Yêu thích
+                                {% elif post.current_user_reaction == 'haha' %}Haha
+                                {% elif post.current_user_reaction == 'sad' %}Buồn
+                                {% elif post.current_user_reaction == 'angry' %}Phẫn nộ
+                                {% endif %}
+                            {% else %}
+                                Thích
+                            {% endif %}
+                        </span>
+                    </button>
+                    
+                    <!-- Reaction Picker -->
+                    <div id="reaction-picker-{{ post.id }}" class="reaction-picker">
+                        <span class="reaction-emoji" onclick="toggleReaction({{ post.id }}, 'like');" title="Thích">👍</span>
+                        <span class="reaction-emoji" onclick="toggleReaction({{ post.id }}, 'love')" title="Yêu thích">❤️</span>
+                        <span class="reaction-emoji" onclick="toggleReaction({{ post.id }}, 'haha')" title="Haha">😂</span>
+                        <span class="reaction-emoji" onclick="toggleReaction({{ post.id }}, 'sad')" title="Buồn">😢</span>
+                        <span class="reaction-emoji" onclick="toggleReaction({{ post.id }}, 'angry')" title="Phẫn nộ">😠</span>
+                    </div>
+                </div>
             </div>
 
-            <button id="btn-post-like-{{ post.id }}" 
-                class="btn w-100 action-btn {% if user_post_reaction %}active{% endif %}"
-                onclick="toggleReaction({{ post.id }}, 'like')">
-                <i class="{% if user_post_reaction.reaction_type == 'like' %}fas fa-thumbs-up{% else %}far fa-thumbs-up{% endif %} me-2"></i>
-                <span id="text-post-like-{{ post.id }}">{% if user_post_reaction %}{{ user_post_reaction.reaction_type|title }}{% else %}Thích{% endif %}</span>
-            </button>
-        </div>
-        
-        <div class="col-4 px-1">
-            <a href="{% url 'posts:post_detail' post.id %}" class="btn w-100 action-btn">
-                <i class="far fa-comment-alt me-2"></i>Bình luận
-            </a>
-        </div>
-        
-        <div class="col-4 px-1">
-            <button class="btn w-100 action-btn" data-bs-toggle="modal" data-bs-target="#shareModal-{{ post.id }}">
-                <i class="fas fa-share me-2"></i>Chia sẻ
-            </button>
+            <!-- Comment Button -->
+            <div class="col-4">
+                <a href="{% url 'posts:post_detail' post.id %}" class="btn w-100 text-muted">
+                    <i class="fas fa-comment me-1"></i>
+                    Bình luận
+                </a>
+            </div>
+
+            <!-- Share Button -->
+            <div class="col-4">
+                <button class="btn w-100 text-muted" onclick="sharePost({{ post.id }})">
+                    <i class="fas fa-share me-1"></i>
+                    Chia sẻ
+                </button>
+            </div>
         </div>
     </div>
 </div>
+{% block scripts %}
 
-<div class="modal fade" id="shareModal-{{ post.id }}" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form action="/posts/{{ post.id }}/share/" method="POST" class="w-100">
-            {% csrf_token %}
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold">Chia sẻ bài viết</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <textarea name="caption" class="form-control border-0 bg-light rounded-3 mb-3 p-3" rows="3" placeholder="Nói gì đó về bài viết này..."></textarea>
-                    <select name="privacy" class="form-select border-0 bg-light rounded-3">
-                        <option value="public">🌍 Công khai</option>
-                        <option value="friends">👥 Bạn bè</option>
-                        <option value="only_me">🔒 Chỉ mình tôi</option>
-                    </select>
-                </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="submit" class="btn btn-primary w-100 rounded-3 fw-bold">Chia sẻ ngay</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
+<script>
+    /**
+ * Global JavaScript cho Posts App
+ * File này chứa các hàm dùng chung cho feed.html và post_detail.html
+ */
+
+// ========================================
+// 1. CSRF TOKEN HELPER
+// ========================================
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Global CSRF token
+const csrftoken = getCookie('csrftoken');
+
+// ========================================
+// 2. REACTION FUNCTIONS
+// ========================================
+let reactionTimeout;
+
+function delayShowReactions(postId) {
+    clearTimeout(reactionTimeout);
+    reactionTimeout = setTimeout(() => {
+        const picker = document.getElementById(`reaction-picker-${postId}`);
+        if (picker) picker.style.display = 'block';
+    }, 500);
+}
+
+function hideReactions(postId) {
+    clearTimeout(reactionTimeout);
+    setTimeout(() => {
+        const picker = document.getElementById(`reaction-picker-${postId}`);
+        if (picker) picker.style.display = 'none';
+    }, 300);
+}
+
+function showReactionPicker(postId) {
+    const picker = document.getElementById(`reaction-picker-${postId}`);
+    if (picker) {
+        const isVisible = picker.style.display === 'block';
+        // Hide all other pickers
+        document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
+        // Toggle current picker
+        picker.style.display = isVisible ? 'none' : 'block';
+    }
+}
+
+function toggleReaction(postId, type = 'like') {
+    const btn = document.getElementById(`btn-post-like-${postId}`);
+    const text = document.getElementById(`text-post-like-${postId}`);
+    const countSpan = document.getElementById(`reaction-count-${postId}`);
+    
+    // Hide reaction picker
+    const picker = document.getElementById(`reaction-picker-${postId}`);
+    if (picker) picker.style.display = 'none';
+    
+    // Send request
+    fetch(`/posts/${postId}/reaction/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `reaction=${type}`
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Network error");
+        return res.json();
+    })
+    .then(data => {
+        // Update UI
+        if (data.status === 'added' || data.status === 'changed') {
+            btn.classList.add('reaction-active');
+            btn.classList.remove('text-muted');
+            
+            const reactionNames = {
+                'like': 'Thích',
+                'love': 'Yêu thích',
+                'haha': 'Haha',
+                'sad': 'Buồn',
+                'angry': 'Phẫn nộ'
+            };
+            text.innerText = reactionNames[type] || 'Thích';
+        } else {
+            btn.classList.remove('reaction-active');
+            btn.classList.add('text-muted');
+            text.innerText = "Thích";
+        }
+        
+        // Update count
+        if (countSpan && data.total_count !== undefined) {
+            countSpan.innerText = data.total_count;
+        }
+    })
+    .catch(err => {
+        console.error('Reaction error:', err);
+        alert('Có lỗi xảy ra. Vui lòng thử lại.');
+    });
+}
+
+// ========================================
+// 3. POST ACTIONS
+// ========================================
+function sharePost(postId) {
+    const caption = prompt("Viết lời nhắn khi chia sẻ (tùy chọn):");
+    if (caption !== null) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/posts/${postId}/share/`;
+        
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrftoken;
+        
+        const captionInput = document.createElement('input');
+        captionInput.type = 'hidden';
+        captionInput.name = 'caption';
+        captionInput.value = caption;
+        
+        form.appendChild(csrfInput);
+        form.appendChild(captionInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function deletePost(postId) {
+    if (confirm("Bạn có chắc muốn xóa bài viết này?")) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/posts/${postId}/delete/`;
+        
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrftoken;
+        
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// ========================================
+// 4. COMMENT FUNCTIONS (for post_detail.html)
+// ========================================
+// --- 2. HÀM GỬI COMMENT (Đã sửa ID) ---
+// function submitComment(parentId = null) {
+//         // SỬA LỖI 1: Đồng bộ ID giữa HTML và JS
+//         // Nếu là comment chính (không có parentId) -> dùng id "main-comment-input"
+//         const inputId = parentId ? `reply-input-${parentId}` : 'main-comment-input';
+        
+//         const contentInput = document.getElementById(inputId);
+//         if (!contentInput) {
+//             console.error("Không tìm thấy ô nhập liệu với ID:", inputId);
+//             return;
+//         }
+
+//         const content = contentInput.value.trim();
+//         const filesInput = document.getElementById('comment-files'); // Input file ẩn (nếu có)
+
+//         // Kiểm tra dữ liệu rỗng
+//         if (!content && (!filesInput || filesInput.files.length === 0)) {
+//             return;
+//         }
+
+//         let formData = new FormData();
+//         formData.append('content', content);
+//         if (parentId) formData.append('parent_id', parentId);
+        
+//         // Chỉ gửi file nếu là comment chính (form phụ thường không có nút attach file)
+//         if (!parentId && filesInput) {
+//             for (let i = 0; i < filesInput.files.length; i++) {
+//                 formData.append('images', filesInput.files[i]);
+//             }
+//         }
+
+//         // Gửi Ajax
+//         fetch(`/posts/${POST_ID}/comment/`, {
+//             method: 'POST',
+//             headers: { 
+//                 'X-CSRFToken': csrftoken 
+//             },
+//             body: formData
+//         })
+//         .then(response => {
+//             if (!response.ok) throw new Error("Gửi thất bại");
+//             return response.json();
+//         })
+//         .then(data => {
+//             console.log("Thành công:", data);
+//             // Xóa nội dung sau khi gửi thành công
+//             contentInput.value = '';
+            
+//             if (parentId) {
+//                 // Ẩn form trả lời
+//                 const replyBox = document.getElementById(`reply-form-${parentId}`);
+//                 if (replyBox) replyBox.classList.add('d-none');
+//             } else {
+//                 // Reset form chính
+//                 if (filesInput) filesInput.value = '';
+//                 const preview = document.getElementById('main-preview');
+//                 if (preview) preview.innerHTML = '';
+//             }
+//         })
+//         .catch(error => console.error("Lỗi:", error));
+//     }
+
+//     // --- 3. ĐẢM BẢO HÀM GLOBAL (Tránh lỗi ReferenceError) ---
+//     window.submitComment = submitComment;
+// --- SỬA LẠI HÀM NÀY ---
+function submitComment(postId, parentId = null) {
+    // Tạo ID động dựa trên postId để tránh trùng lặp
+    const inputId = parentId ? `reply-input-${parentId}` : 'main-comment-input';
+    
+    const contentInput = document.getElementById(inputId);
+    if (!contentInput) return; // Không tìm thấy input thì dừng
+
+    const content = contentInput.value.trim();
+    const filesInput = document.getElementById('comment-files');
+
+    if (!content && (!filesInput || filesInput.files.length === 0)) return;
+
+    let formData = new FormData();
+    formData.append('content', content);
+    if (parentId) formData.append('parent_id', parentId);
+    
+    if (!parentId && filesInput) {
+        for (let i = 0; i < filesInput.files.length; i++) {
+            formData.append('images', filesInput.files[i]);
+        }
+    }
+
+    // Dùng postId được truyền vào thay vì POST_ID toàn cục
+    fetch(`/posts/${postId}/comment/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            contentInput.value = ''; // Xóa nội dung input
+            
+            if (parentId) {
+                // Ẩn form trả lời (Chú ý ID phải khớp với HTML)
+                const replyForm = document.getElementById(`reply-form-${parentId}`);
+                if (replyForm) replyForm.classList.add('d-none');
+            } else {
+                // Reset file input nếu là comment chính
+                if (filesInput) filesInput.value = '';
+                const preview = document.getElementById('main-preview');
+                if (preview) preview.innerHTML = '';
+            }
+        } else {
+            alert(data.error || 'Có lỗi xảy ra');
+        }
+    })
+    .catch(error => console.error("Lỗi:", error));
+}
+
+function toggleCommentLike(commentId) {
+    fetch(`/posts/comment/${commentId}/reaction/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'reaction=like'
+    })
+    .then(res => res.json())
+    .then(data => {
+        const linkEl = document.getElementById(`comment-like-${commentId}`);
+        if (linkEl) {
+            if (data.status === 'added' || data.status === 'changed') {
+                linkEl.classList.add('text-primary', 'fw-bold');
+                linkEl.classList.remove('text-muted');
+            } else {
+                linkEl.classList.remove('text-primary', 'fw-bold');
+                linkEl.classList.add('text-muted');
+            }
+        }
+    })
+    .catch(err => console.error('Comment reaction error:', err));
+}
+
+function deleteComment(commentId) {
+    if (!confirm("Bạn có chắc muốn xóa bình luận này?")) return;
+    
+    fetch(`/posts/comment/${commentId}/delete/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrftoken}
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status !== 'ok') {
+            alert(data.error || 'Có lỗi xảy ra');
+        }
+    })
+    .catch(err => console.error('Delete comment error:', err));
+}
+
+function showReply(commentId) {
+    const box = document.getElementById(`reply-box-${commentId}`);
+    if (box) {
+        box.classList.toggle('d-none');
+        if (!box.classList.contains('d-none')) {
+            const input = box.querySelector('input');
+            if (input) input.focus();
+        }
+    }
+}
+
+// ========================================
+// 5. UTILITY FUNCTIONS
+// ========================================
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ========================================
+// 6. GLOBAL EVENT LISTENERS
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Close reaction pickers when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.reaction-btn') && !e.target.closest('.reaction-picker')) {
+            document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
+        }
+    });
+    
+    console.log('✅ Posts.js loaded successfully');
+});
+</script>
+{% endblock %}

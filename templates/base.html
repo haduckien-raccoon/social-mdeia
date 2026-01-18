@@ -101,7 +101,7 @@
             <div class="nav-item"><i class="fa-solid fa-people-group"></i> <span>Group</span></div>
             <div class="nav-item"><i class="fa-brands fa-facebook-messenger"></i> <span>Messages</span></div>
             <div class="nav-item"><i class="fa-regular fa-heart"></i> <span>Notifications</span></div>
-            <div class="nav-item"><i class="fa-regular fa-square-plus"></i> <span>Create</span></div>
+            <div class="nav-item" onclick="createPost()"><i class="fa-regular fa-square-plus"></i> <span>Create</span></div>
             <div class="nav-item" onclick="profile()">
                 <i class="fa-solid fa-circle-user"></i> <span>{{ user.username }}</span>
             </div>
@@ -120,7 +120,12 @@
         function logout() { window.location.href = "/accounts/logout/"; }
         function profile() { window.location.href = "/accounts/profile/"; }
         function friend() { window.location.href = "/friends/"; }
+        function createPost() { window.location.href = "/posts/create/"; }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Posts Global Functions -->
+    <script src="../static/js/posts.js"></script>
     
     {% block extra_js %}{% endblock %}
 </body>
