@@ -9,6 +9,7 @@ from datetime import timedelta
 from django.core.mail import send_mail
 from .models import User, EmailVerificationToken, UserProfile
 from django.conf import settings
+from apps.friends.models import *
 
 JWT_SECRET = settings.SECRET_KEY
 JWT_ALGORITHM = 'HS256'
@@ -299,3 +300,8 @@ def get_user_by_id(user_id):
         return user
     except User.DoesNotExist:
         return None
+
+def get_friends_list(user):
+    """Liệt kê bạn bè để tag vào bài viết"""
+    friends = Friend.objects.filter(user=user).select_related('friend')
+    return [f.friend for f in friends]

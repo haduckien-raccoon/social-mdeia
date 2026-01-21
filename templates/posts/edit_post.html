@@ -1,31 +1,576 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    /* ===== 1. GLOBAL VARIABLES ===== */
+    :root {
+        --primary: #1877f2;       /* Màu xanh Facebook */
+        --bg-gray: #f0f2f5;
+        --card-bg: #fff;
+        --text-color: #050505;
+        --text-gray: #65676b;
+        --radius: 12px;
+        --hover-bg: #f2f2f2;
+    }
+
+    /* ===== 2. LAYOUT ===== */
+    .page {
+        display: flex;
+        justify-content: center;
+        padding: 20px 10px;
+        font-family: Segoe UI, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-gray);
+        min-height: 100vh;
+    }
+
+    .card-post {
+        width: 100%;
+        max-width: 500px;
+        background: var(--card-bg);
+        border-radius: var(--radius);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* ===== 3. HEADER ===== */
+    .card-header {
+        text-align: center;
+        padding: 15px;
+        font-size: 20px;
+        font-weight: 700;
+        border-bottom: 1px solid #e4e6eb;
+        position: relative;
+        color: var(--text-color);
+    }
+
+    .close-btn {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e4e6eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #606770;
+        text-decoration: none;
+        font-size: 24px;
+        transition: 0.2s;
+    }
+    .close-btn:hover { background: #d8dadf; }
+
+    /* ===== 4. BODY ===== */
+    .card-body { padding: 15px; }
+
+    /* User Info Row */
+    .user-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .user-row img {
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .user-name {
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--text-color);
+        margin-bottom: 2px;
+    }
+    .privacy {
+        background: #e4e6eb;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        padding: 4px 8px;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--text-color);
+    }
+
+    /* Text Input */
+    .post-text {
+        width: 100%;
+        border: none;
+        outline: none;
+        resize: none;
+        font-size: 20px; /* Font to vừa phải */
+        min-height: 100px;
+        margin-bottom: 15px;
+        font-family: inherit;
+        color: var(--text-color);
+    }
+    .post-text::placeholder { color: var(--text-gray); }
+
+    /* ===== 5. PREVIEW AREAS ===== */
+    
+    /* Tag Box */
+    .tag-box { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .tag-chip {
+        background: #e7f3ff;
+        color: var(--primary);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .tag-chip span { cursor: pointer; font-size: 16px; font-weight: bold; line-height: 1; }
+
+    /* Image Grid */
+    .img-grid {
+        display: none; /* Mặc định ẩn */
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #e4e6eb;
+        border-radius: 8px;
+        padding: 8px;
+    }
+    .img-grid.active { display: grid; }
+
+    .preview-item {
+        position: relative;
+        height: 100px;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+    }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .remove-btn {
+        position: absolute;
+        top: 4px; right: 4px;
+        background: #fff;
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        font-size: 16px; font-weight: bold; color: #606770;
+    }
+    .remove-btn:hover { background: #f2f2f2; }
+
+    .add-more {
+        border: 1px dashed #ced0d4;
+        border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; color: #606770;
+        cursor: pointer; height: 100px;
+        background: #f7f8fa;
+    }
+    .add-more:hover { background: #e4e6eb; }
+
+    /* File List */
+    .file-list { display: none; margin-bottom: 15px; }
+    .file-list.active { display: block; }
+    .file-item {
+        background: #f0f2f5;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        display: flex; justify-content: space-between; align-items: center;
+        font-size: 14px; font-weight: 500;
+    }
+
+    /* ===== 6. ACTION BAR ===== */
+    .add-bar {
+        border: 1px solid #ced0d4;
+        border-radius: 8px;
+        padding: 10px 15px;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        margin-bottom: 15px;
+    }
+    .action-icons { display: flex; gap: 5px; }
+    .icon-btn {
+        width: 36px; height: 36px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: 0.2s;
+        font-size: 20px;
+    }
+    .icon-btn:hover { background: var(--hover-bg); }
+
+    /* ===== 7. SUBMIT BUTTON ===== */
+    .submit-btn {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        background-color: #e4e6eb; /* Mặc định xám */
+        color: #bcc0c4;
+        font-weight: bold;
+        font-size: 16px;
+        cursor: not-allowed;
+        transition: all 0.2s;
+        pointer-events: none; /* Chặn click */
+    }
+    .submit-btn.active {
+        background: #0064fb; 
+        color: #fff;
+        cursor: pointer;
+        pointer-events: auto;
+    }
+    .submit-btn.active:hover { background-color: #166fe5; }
+
+    /* ===== 8. MODAL ===== */
+    .modal {
+        position: fixed; inset: 0;
+        background: rgba(244, 244, 244, 0.8);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center; align-items: center;
+        z-index: 1000;
+    }
+    .modal-box {
+        background: #fff;
+        width: 100%; max-width: 400px; height: 500px;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        display: flex; flex-direction: column;
+        border: 1px solid #ddd;
+        overflow: hidden;
+    }
+    .modal-header { padding: 15px; border-bottom: 1px solid #eee; }
+    .search-input { width: 100%; padding: 8px 12px; border-radius: 20px; background: #f0f2f5; border: none; outline: none; }
+    .friend-list { flex: 1; overflow-y: auto; padding: 10px; }
+    
+    .friend {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px; border-radius: 8px;
+        cursor: pointer; transition: 0.2s;
+    }
+    .friend:hover { background: #f0f2f5; }
+    
+    .chk-ui {
+        width: 20px; height: 20px;
+        border: 2px solid #ced0d4; border-radius: 50%;
+        margin-left: auto; position: relative;
+    }
+    input:checked + .chk-ui { background: var(--primary); border-color: var(--primary); }
+    input:checked + .chk-ui::after {
+        content: '✔'; color: #fff; font-size: 12px;
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">Chỉnh sửa bài viết</div>
-            <div class="card-body">
-                <form method="POST">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <textarea name="content" class="form-control" rows="5">{{ post.content }}</textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label>Quyền riêng tư</label>
-                        <select name="privacy" class="form-select">
-                            <option value="public" {% if post.privacy == 'public' %}selected{% endif %}>Công khai</option>
-                            <option value="friends" {% if post.privacy == 'friends' %}selected{% endif %}>Bạn bè</option>
-                            <option value="only_me" {% if post.privacy == 'only_me' %}selected{% endif %}>Chỉ mình tôi</option>
+<div class="page">
+    <div class="card-post">
+        
+        <div class="card-header">
+            Chỉnh sửa bài viết
+            <a href="/" class="close-btn">&times;</a>
+        </div>
+
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data" id="postForm">
+                {% csrf_token %}
+
+                <div class="user-row">
+                    <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=random">
+                    <div>
+                        <div class="user-name">{{ request.user.username }}</div>
+                        <select class="privacy" name="privacy">
+                            <option value="public" {% if post.privacy == 'public' %}selected{% endif %}>🌍 Công khai</option>
+                            <option value="friends" {% if post.privacy == 'friends' %}selected{% endif %}>👥 Bạn bè</option>
+                            <option value="only_me" {% if post.privacy == 'only_me' %}selected{% endif %}>🔒 Chỉ mình tôi</option>
                         </select>
                     </div>
+                </div>
 
-                    <button type="submit" class="btn btn-success">Lưu thay đổi</button>
-                    <a href="{% url 'posts:feed' %}" class="btn btn-secondary">Hủy</a>
-                </form>
-            </div>
+                <textarea class="post-text" name="content" id="content" placeholder="Bạn đang nghĩ gì?">{{ post.content }}</textarea>
+
+                <div id="deletedItemsContainer"></div>
+
+                <div class="tag-box" id="tagPreview">
+                    {% for u in post.tagged_users.all %}
+                        <div class="tag-chip" id="tag-existing-{{ u.id }}">
+                            {{ u.username }}
+                            <span onclick="untagExisting('{{ u.id }}')">&times;</span>
+                            <input type="hidden" name="tagged_users" value="{{ u.id }}">
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="img-grid {% if post.images.all %}active{% endif %}" id="imgPreview">
+                    {% for img in post.images.all %}
+                    <div class="preview-item existing-img" id="img-old-{{ img.id }}">
+                        <img src="{{ img.image.url }}">
+                        <div class="remove-btn" onclick="rmExistingImg('{{ img.id }}')">&times;</div>
+                    </div>
+                    {% endfor %}
+                    </div>
+
+                <div class="file-list {% if post.files.all %}active{% endif %}" id="filePreview">
+                    {% for f in post.files.all %}
+                    <div class="file-item existing-file" id="file-old-{{ f.id }}">
+                        <span>📄 {{ f.file.name }}</span>
+                        <span style="cursor:pointer;color:red" onclick="rmExistingFile('{{ f.id }}')">&times;</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="add-bar">
+                    <small style="font-weight:600; color:var(--text-color)">Thêm vào bài viết</small>
+                    <div class="action-icons">
+                        <div class="icon-btn" id="imgBtn"><i class="fas fa-images" style="color:#45bd62"></i></div>
+                        <div class="icon-btn" id="tagBtn"><i class="fas fa-user-tag" style="color:#1877f2"></i></div>
+                        <div class="icon-btn" id="fileBtn"><i class="fas fa-paperclip" style="color:#f5533d"></i></div>
+                    </div>
+                </div>
+
+                <input type="file" id="imgInput" name="images" hidden multiple accept="image/*">
+                <input type="file" id="fileInput" name="files" hidden multiple>
+                <input type="hidden" name="location" value="{{ post.location_name|default:'' }}">
+
+                <button type="submit" class="submit-btn" id="submitBtn">Lưu</button>
+            </form>
         </div>
     </div>
 </div>
+
+<div class="modal" id="tagModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <strong>Gắn thẻ bạn bè</strong>
+                <span style="cursor:pointer" id="closeTag">&times;</span>
+            </div>
+            <input type="text" class="search-input" id="friendSearch" placeholder="Tìm kiếm...">
+        </div>
+        <div class="friend-list">
+            {% for f in friends %}
+            <label class="friend" data-name="{{ f.username|lower }}">
+                <img src="https://ui-avatars.com/api/?name={{ f.username }}&background=random" 
+                     style="width:36px;height:36px;border-radius:50%">
+                <span>{{ f.username }}</span>
+                <input type="checkbox" class="friendChk" value="{{ f.id }}" data-name="{{ f.username }}" hidden 
+                    {% if f in post.tagged_users.all %}checked{% endif %}>
+                <div class="chk-ui"></div> 
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    
+    // --- 1. DOM ELEMENTS ---
+    const els = {
+        form: document.getElementById('postForm'),
+        txt: document.getElementById('content'),
+        imgInp: document.getElementById('imgInput'),
+        fileInp: document.getElementById('fileInput'),
+        imgPre: document.getElementById('imgPreview'),
+        filePre: document.getElementById('filePreview'),
+        tagPre: document.getElementById('tagPreview'),
+        tagModal: document.getElementById('tagModal'),
+        submitBtn: document.getElementById('submitBtn'),
+        deletedContainer: document.getElementById('deletedItemsContainer')
+    };
+
+    // State lưu trữ các file MỚI upload (Client side)
+    let state = { newImages: [], newFiles: [] };
+
+    // --- 2. LOGIC SUBMIT (QUAN TRỌNG NHẤT) ---
+    // Hàm đồng bộ từ biến state vào input file
+    const syncInput = (inp, list) => {
+        const dt = new DataTransfer();
+        list.forEach(f => dt.items.add(f));
+        inp.files = dt.files;
+    };
+
+    // Bắt sự kiện click nút Lưu
+    els.submitBtn.onclick = (e) => {
+        e.preventDefault(); // Chặn gửi mặc định để xử lý trước
+
+        // Đồng bộ dữ liệu lần cuối
+        syncInput(els.imgInp, state.newImages);
+        syncInput(els.fileInp, state.newFiles);
+
+        console.log("Submitting images count:", els.imgInp.files.length); // Debug
+
+        els.form.submit(); // Gửi form đi
+    };
+
+    // --- 3. CHECK INPUT STATE (Bật/Tắt nút Lưu) ---
+    function checkInput() {
+        const hasText = els.txt.value.trim().length > 0;
+        const visibleImages = els.imgPre.querySelectorAll('.preview-item').length;
+        const visibleFiles = els.filePre.querySelectorAll('.file-item').length;
+
+        // Cho phép lưu nếu có bất kỳ thay đổi nào (thực ra là có nội dung)
+        const canSubmit = hasText || visibleImages > 0 || visibleFiles > 0;
+
+        if (canSubmit) {
+            els.submitBtn.removeAttribute('disabled');
+            els.submitBtn.classList.add('active');
+        } else {
+            els.submitBtn.setAttribute('disabled', 'true');
+            els.submitBtn.classList.remove('active');
+        }
+        
+        // Auto resize textarea
+        els.txt.style.height = 'auto';
+        els.txt.style.height = els.txt.scrollHeight + 'px';
+        
+        // Ẩn hiện khung preview
+        els.imgPre.classList.toggle('active', visibleImages > 0);
+        els.filePre.classList.toggle('active', visibleFiles > 0);
+    }
+
+    // --- 4. XỬ LÝ ẢNH/FILE CŨ (TỪ SERVER) ---
+    window.rmExistingImg = (id) => {
+        // Xóa khỏi giao diện
+        document.getElementById(`img-old-${id}`).remove();
+        // Thêm input ẩn để báo Server xóa
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'delete_image_ids'; 
+        input.value = id;
+        els.deletedContainer.appendChild(input);
+        checkInput();
+    };
+
+    window.rmExistingFile = (id) => {
+        document.getElementById(`file-old-${id}`).remove();
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'delete_file_ids';
+        input.value = id;
+        els.deletedContainer.appendChild(input);
+        checkInput();
+    };
+
+    // --- 5. XỬ LÝ ẢNH/FILE MỚI (UPLOAD) ---
+    // Trigger click input
+    document.getElementById('imgBtn').onclick = () => els.imgInp.click();
+    document.getElementById('fileBtn').onclick = () => els.fileInp.click();
+
+    // Handle Image Select
+    els.imgInp.onchange = (e) => {
+        if (e.target.files.length) {
+            state.newImages.push(...e.target.files);
+            renderNewImg();
+            e.target.value = ''; // Reset để chọn tiếp được
+        }
+    };
+    
+    // Handle File Select
+    els.fileInp.onchange = (e) => {
+        if (e.target.files.length) {
+            state.newFiles.push(...e.target.files);
+            renderNewFile();
+            e.target.value = '';
+        }
+    };
+
+    function renderNewImg() {
+        // Xóa preview MỚI cũ đi để render lại từ mảng state
+        els.imgPre.querySelectorAll('.new-upload').forEach(e => e.remove());
+        document.querySelector('.add-more')?.remove();
+
+        state.newImages.forEach((f, i) => {
+            const r = new FileReader();
+            r.onload = e => {
+                const div = document.createElement('div');
+                div.className = 'preview-item new-upload';
+                div.innerHTML = `<img src="${e.target.result}"><div class="remove-btn" onclick="rmNewImg(${i})">&times;</div>`;
+                els.imgPre.appendChild(div);
+                ensureAddMoreBtn(); 
+            }
+            r.readAsDataURL(f);
+        });
+        
+        if(state.newImages.length === 0) ensureAddMoreBtn();
+        // Đồng bộ tạm thời để check logic nút
+        syncInput(els.imgInp, state.newImages);
+        setTimeout(checkInput, 100);
+    }
+
+    function ensureAddMoreBtn() {
+        // Nút cộng thêm ảnh
+        document.querySelector('.add-more')?.remove();
+        if (els.imgPre.querySelectorAll('.preview-item').length > 0) {
+            const add = document.createElement('div');
+            add.className = 'add-more'; add.innerHTML = '+';
+            add.onclick = () => els.imgInp.click();
+            els.imgPre.appendChild(add);
+        }
+    }
+
+    function renderNewFile() {
+        els.filePre.querySelectorAll('.new-upload').forEach(e => e.remove());
+        state.newFiles.forEach((f, i) => {
+            const div = document.createElement('div');
+            div.className = 'file-item new-upload';
+            div.innerHTML = `<span>📄 ${f.name} (Mới)</span><span style="cursor:pointer;color:red" onclick="rmNewFile(${i})">&times;</span>`;
+            els.filePre.appendChild(div);
+        });
+        syncInput(els.fileInp, state.newFiles);
+        checkInput();
+    }
+
+    window.rmNewImg = (i) => { state.newImages.splice(i, 1); renderNewImg(); };
+    window.rmNewFile = (i) => { state.newFiles.splice(i, 1); renderNewFile(); };
+
+    // --- 6. TAG MODAL ---
+    window.untagExisting = (id) => {
+        document.getElementById(`tag-existing-${id}`).remove();
+        const chk = document.querySelector(`.friendChk[value="${id}"]`);
+        if(chk) chk.checked = false;
+    };
+
+    document.getElementById('tagBtn').onclick = () => els.tagModal.style.display = 'flex';
+    document.getElementById('closeTag').onclick = () => els.tagModal.style.display = 'none';
+    els.tagModal.onclick = (e) => { if(e.target === els.tagModal) els.tagModal.style.display = 'none'; };
+
+    document.getElementById('friendSearch').oninput = function() {
+        const val = this.value.toLowerCase();
+        document.querySelectorAll('.friend').forEach(el => el.style.display = el.dataset.name.includes(val) ? 'flex' : 'none');
+    };
+
+    document.querySelectorAll('.friendChk').forEach(chk => {
+        chk.onchange = () => {
+            const id = chk.value, name = chk.dataset.name;
+            if(chk.checked) {
+                if(!document.getElementById(`tag-existing-${id}`) && !document.getElementById(`tag-new-${id}`)) {
+                    const chip = document.createElement('div');
+                    chip.className = 'tag-chip'; chip.id = 'tag-new-'+id;
+                    chip.innerHTML = `${name}<span onclick="untagNew('${id}')">&times;</span><input type="hidden" name="tagged_users" value="${id}">`;
+                    els.tagPre.appendChild(chip);
+                }
+            } else {
+                document.getElementById('tag-new-'+id)?.remove();
+                if(document.getElementById(`tag-existing-${id}`)) untagExisting(id);
+            }
+        };
+    });
+
+    window.untagNew = (id) => {
+        document.querySelector(`.friendChk[value="${id}"]`).checked = false;
+        document.getElementById('tag-new-'+id)?.remove();
+    };
+
+    // --- 7. INIT ---
+    els.txt.addEventListener('input', checkInput);
+    ensureAddMoreBtn();
+    checkInput();
+});
+</script>
 {% endblock %}

@@ -9,6 +9,7 @@ from apps.middleware.utils import generate_jwt_pair_for_user
 from django.contrib import messages
 from .models import User, PasswordResetToken, EmailVerificationToken, UserProfile
 from .services import *
+from apps.accounts.services import *
 
 @csrf_exempt
 def register_view(request):
@@ -170,6 +171,13 @@ def profile_view(request, id=None):
             # Nếu không truyền username, xem profile chính mình
             user = current_user
 
+        #lấy tất cả bạn bè của user hoặc chính mình
+        if user == current_user:
+            friends = get_friends_list(current_user)
+        else:
+            friends = get_friends_list(user)
+
+        count_friends = len(friends)
         profile = get_object_or_404(UserProfile, user=user)
         #in toàn bộ profile để debug
         if profile.bio is None:
@@ -180,7 +188,9 @@ def profile_view(request, id=None):
         return render(request, "accounts/profile.html", {
             "user": user,  # profile đang xem
             "profile": profile,
-            "current_user": current_user  # user đăng nhập
+            "current_user": current_user,  # user đăng nhập
+            "friends": friends,
+            "count_friends": count_friends
         })
 
     except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):

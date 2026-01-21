@@ -10,7 +10,6 @@ from apps.friends.models import Friend
 # =====================================================
 # FEED VIEWS
 # =====================================================
-@login_required
 def feed_view(request):
     """Bảng tin cá nhân"""
     friends_ids = get_friend_ids(request.user)
@@ -29,7 +28,6 @@ def feed_view(request):
     
     return render(request, "posts/feed.html", {"posts": posts})
 
-@login_required
 def public_feed_view(request):
     """Bảng tin công khai"""
     posts = get_public_feed()
@@ -45,7 +43,6 @@ def public_feed_view(request):
 # =====================================================
 # POST DETAIL VIEW (SỬA LẠI PHẦN NÀY)
 # =====================================================
-@login_required
 def post_detail_view(request, post_id):
     """Chi tiết bài viết"""
     post = get_object_or_404(
@@ -111,7 +108,6 @@ def post_detail_view(request, post_id):
 # =====================================================
 # POST CRUD
 # =====================================================
-@login_required
 def create_post_view(request):
     """Tạo bài viết mới"""
     if request.method == "POST":
@@ -119,6 +115,8 @@ def create_post_view(request):
         privacy = request.POST.get("privacy", "public")
 
         images = request.FILES.getlist("images")
+        #in ra log để debug
+        print(f"[DEBUG] Uploaded images: {images}")
         files = request.FILES.getlist("files")
         tagged = request.POST.getlist("tagged_users")
         location = request.POST.get("location", "")
@@ -136,10 +134,10 @@ def create_post_view(request):
         return redirect("posts:post_detail", post_id=post.id)
     
     # GET request - Show form
-    friends = Friend.objects.filter(user=request.user).select_related('friend')
-    return render(request, "posts/create_post.html", {"friends": friends})
+    friends = list_people_tag(request.user)
+    profile = request.user.profile
+    return render(request, "posts/create_post.html", {"friends": friends, "profile": profile})
 
-@login_required
 def edit_post_view(request, post_id):
     """Chỉnh sửa bài viết"""
     post = get_object_or_404(Post, id=post_id, is_deleted=False)
@@ -150,13 +148,37 @@ def edit_post_view(request, post_id):
     if request.method == "POST":
         content = request.POST.get("content")
         privacy = request.POST.get("privacy")
+        tag_users = request.POST.getlist("tagged_users")
+        location = request.POST.get("location", "")
+        
+        # 1. Lấy file MỚI upload lên
+        images = request.FILES.getlist("images")
+        files = request.FILES.getlist("files")
+        
+        # 2. Lấy danh sách ID CŨ cần xóa (quan trọng)
+        delete_image_ids = request.POST.getlist("delete_image_ids")
+        delete_file_ids = request.POST.getlist("delete_file_ids")
 
-        update_post(post, content=content, privacy=privacy)
+        print(f"[DEBUG] New Images: {images}")
+        print(f"[DEBUG] Delete Img IDs: {delete_image_ids}")
+
+        update_post(
+            post, 
+            content=content, 
+            privacy=privacy, 
+            tagged_users=tag_users, 
+            images=images, 
+            files=files, 
+            location_name=location,
+            delete_image_ids=delete_image_ids, # Truyền vào service
+            delete_file_ids=delete_file_ids    # Truyền vào service
+        )
         return redirect("posts:post_detail", post_id=post.id)
+    
+    friends = list_people_tag(request.user)
+    profile = request.user.profile
+    return render(request, "posts/edit_post.html", {"post": post, "friends": friends, "profile": profile})
 
-    return render(request, "posts/edit_post.html", {"post": post})
-
-@login_required
 @require_POST
 def delete_post_view(request, post_id):
     """Xóa bài viết"""
@@ -167,7 +189,6 @@ def delete_post_view(request, post_id):
 # =====================================================
 # COMMENT CRUD (AJAX/REALTIME)
 # =====================================================
-@login_required
 @require_POST
 def create_comment_view(request, post_id):
     """Tạo bình luận mới - Trả về JSON cho AJAX"""
@@ -201,7 +222,6 @@ def create_comment_view(request, post_id):
     except ValidationError as e:
         return JsonResponse({"error": str(e)}, status=400)
 
-@login_required
 @require_POST
 def edit_comment_view(request, comment_id):
     """Chỉnh sửa bình luận"""
@@ -217,7 +237,6 @@ def edit_comment_view(request, comment_id):
     except PermissionDenied as e:
         return JsonResponse({"error": str(e)}, status=403)
 
-@login_required
 @require_POST
 def delete_comment_view(request, comment_id):
     """Xóa bình luận"""
@@ -232,7 +251,6 @@ def delete_comment_view(request, comment_id):
 # =====================================================
 # REACTION VIEWS (AJAX/REALTIME)
 # =====================================================
-@login_required
 @require_POST
 def toggle_post_reaction_view(request, post_id):
     """Toggle reaction cho bài viết"""
@@ -242,7 +260,6 @@ def toggle_post_reaction_view(request, post_id):
     result = toggle_post_reaction(request.user, post, reaction_type)
     return JsonResponse(result)
 
-@login_required
 @require_POST
 def toggle_comment_reaction_view(request, comment_id):
     """Toggle reaction cho bình luận"""
@@ -255,7 +272,6 @@ def toggle_comment_reaction_view(request, comment_id):
 # =====================================================
 # OTHER ACTIONS
 # =====================================================
-@login_required
 @require_POST
 def share_post_view(request, post_id):
     """Chia sẻ bài viết"""
@@ -266,7 +282,6 @@ def share_post_view(request, post_id):
     new_post = share_post(request.user, original_post, caption, privacy)
     return redirect("posts:post_detail", post_id=new_post.id)
 
-@login_required
 @require_POST
 def report_view(request):
     """Báo cáo bài viết hoặc bình luận"""
@@ -284,7 +299,6 @@ def report_view(request):
     )
     return JsonResponse({"success": True})
 
-@login_required
 @require_POST
 def toggle_commenting_view(request, post_id):
     """Bật/tắt bình luận cho bài viết"""
@@ -297,7 +311,6 @@ def toggle_commenting_view(request, post_id):
     except PermissionDenied as e:
         return JsonResponse({"error": str(e)}, status=403)
 
-@login_required
 @require_POST
 def toggle_hide_counts_view(request, post_id):
     """Ẩn/hiện số lượng reactions và comments"""

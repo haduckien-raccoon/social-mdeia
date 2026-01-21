@@ -1,60 +1,342 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+/* ===== GLOBAL VARIABLES ===== */
+:root {
+    --primary: #1877f2;
+    --green-btn: #42b72a;
+    --green-hover: #36a420;
+    --bg-gray: #f0f2f5;
+    --card-bg: #fff;
+    --text-color: #050505;
+    --text-gray: #65676b;
+    --radius: 12px;
+}
+
+/* ===== LAYOUT ===== */
+.page {
+    display: flex;
+    justify-content: center;
+    padding: 20px 10px;
+    font-family: Segoe UI, Helvetica, Arial, sans-serif;
+}
+.card-post {
+    width: 700px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 4px rgba(0,0,0,.1), 0 8px 16px rgba(0,0,0,.1);
+    overflow: hidden;
+}
+
+/* ===== HEADER ===== */
+.card-header {
+    text-align: center;
+    padding: 15px;
+    font-size: 20px;
+    font-weight: 700;
+    border-bottom: 1px solid #e4e6eb;
+    position: relative;
+}
+.close-btn {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e4e6eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #606770;
+    text-decoration: none;
+    font-size: 24px;
+}
+
+/* ===== BODY ===== */
+.card-body { padding: 15px; }
+.user-row { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; }
+.user-row img { width: 40px; height: 40px; border-radius: 50%; }
+.user-name { font-weight: 600; }
+
+.privacy {
+    background: #e4e6eb;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    padding: 4px 8px;
+    font-weight: 600;
+}
+
+/* ===== INPUT ===== */
+.post-text {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 19px;
+    min-height: 56px;
+    margin-bottom: 10px;
+}
+.post-text::placeholder { color: var(--text-gray); }
+
+/* ===== TAG ===== */
+.tag-box { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.tag-chip {
+    background: #e7f3ff;
+    color: var(--primary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    display: flex;
+    gap: 6px;
+}
+.tag-chip span { cursor: pointer; font-weight: bold; }
+
+/* ===== IMAGE ===== */
+.img-grid {
+    display: none;
+    grid-template-columns: repeat(auto-fill, minmax(100px,1fr));
+    gap: 8px;
+    border: 1px solid #e4e6eb;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+.img-grid.active { display: grid; }
+.preview-item { position: relative; height: 100px; }
+.preview-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+.remove-btn {
+    position: absolute;
+    top: 4px; right: 4px;
+    background: #fff;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+}
+
+/* ===== FILE ===== */
+.file-list { display: none; margin-bottom: 10px; }
+.file-list.active { display: block; }
+.file-item {
+    background: #f0f2f5;
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ===== ACTION ===== */
+.add-bar {
+    border: 1px solid #ced0d4;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+.icon-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* ===== SUBMIT ===== */
+.submit-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    background: #0064fb;
+    color: #fff;
+    font-weight: bold;
+    font-size: 16px;
+}
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== MODAL ===== */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+.modal-box {
+    background: #fff;
+    width: 400px;
+    height: 500px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+}
+.friend { display: flex; align-items: center; gap: 10px; padding: 8px; cursor: pointer; }
+.friend:hover { background: #f0f2f5; }
+.chk-ui {
+    margin-left: auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #ced0d4;
+}
+input:checked + .chk-ui {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-7">
-        <div class="card-modern shadow-sm p-0">
-            <div class="border-bottom p-3 text-center position-relative">
-                <h5 class="fw-bold mb-0">Tạo bài viết</h5>
-                <a href="/" class="btn btn-light btn-sm rounded-circle position-absolute top-50 end-0 translate-middle-y me-3">
-                    <i class="fas fa-times"></i>
-                </a>
-            </div>
-            
-            <div class="p-3">
-                <div class="d-flex align-items-center mb-3">
-                    <img src="https://ui-avatars.com/api/?name={{ request.user.username }}" class="rounded-circle me-2" width="40">
-                    <div>
-                        <div class="fw-bold">{{ request.user.username }}</div>
-                        <select class="form-select form-select-sm border-0 bg-light rounded-pill py-0 ps-2 pe-4" style="width: auto; height: 24px; font-size: 12px;">
-                            <option>🌍 Công khai</option>
-                            <option>👥 Bạn bè</option>
-                        </select>
-                    </div>
-                </div>
+<div class="page">
+<div class="card-post">
+<div class="card-header">
+    Tạo bài viết
+    <a href="/" class="close-btn">&times;</a>
+</div>
 
-                <form method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    <textarea name="content" class="form-control border-0 fs-5 mb-3" rows="4" 
-                              placeholder="Bạn đang nghĩ gì thế, {{ request.user.username }}?" style="resize: none; box-shadow: none;"></textarea>
-
-                    <div class="border rounded-3 p-2 mb-3 d-flex justify-content-between align-items-center shadow-sm">
-                        <span class="fw-bold small ps-2">Thêm vào bài viết</span>
-                        <div class="d-flex gap-1">
-                            <label class="btn btn-light rounded-circle text-success" title="Ảnh/Video">
-                                <i class="fas fa-images"></i>
-                                <input type="file" name="images" hidden multiple onchange="alert('Đã chọn ' + this.files.length + ' ảnh')">
-                            </label>
-                            <label class="btn btn-light rounded-circle text-primary" title="Gắn thẻ người khác">
-                                <i class="fas fa-user-tag"></i>
-                                </label>
-                            <label class="btn btn-light rounded-circle text-danger" title="Vị trí">
-                                <i class="fas fa-map-marker-alt"></i>
-                            </label>
-                            <label class="btn btn-light rounded-circle text-info" title="File">
-                                <i class="fas fa-paperclip"></i>
-                                <input type="file" name="files" hidden multiple>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <input type="hidden" name="privacy" value="public">
-
-                    <button type="submit" class="btn btn-primary w-100 rounded-3 fw-bold py-2">Đăng</button>
-                </form>
-            </div>
-        </div>
+<div class="card-body">
+<div class="user-row">
+    <img src="https://ui-avatars.com/api/?name={{ request.user.username }}">
+    <div>
+        <div class="user-name">{{ request.user.username }}</div>
+        <select class="privacy" id="privacySelect">
+            <option value="public">🌍 Công khai</option>
+            <option value="friends">👥 Bạn bè</option>
+            <option value="only_me">🔒 Chỉ mình tôi</option>
+        </select>
     </div>
 </div>
+
+<form id="postForm">
+    {% csrf_token %}
+    <input type="hidden" name="privacy" id="privacyInput" value="public">
+
+    <textarea class="post-text" id="content" placeholder="Bạn đang nghĩ gì?"></textarea>
+
+    <div class="tag-box" id="tagPreview"></div>
+    <div class="img-grid" id="imgPreview"></div>
+    <div class="file-list" id="filePreview"></div>
+
+    <div class="add-bar">
+        <small>Thêm vào bài viết</small>
+        <div>
+            <span class="icon-btn" id="imgBtn">🖼</span>
+            <span class="icon-btn" id="tagBtn">👤</span>
+            <span class="icon-btn" id="fileBtn">📎</span>
+        </div>
+    </div>
+
+    <input type="file" id="imgInput" hidden multiple accept="image/*">
+    <input type="file" id="fileInput" hidden multiple>
+
+    <button class="submit-btn" id="submitBtn" disabled>Đăng</button>
+</form>
+</div>
+</div>
+</div>
+
+<div class="modal" id="tagModal">
+<div class="modal-box">
+    {% for f in friends %}
+    <label class="friend">
+        <span>{{ f.username }}</span>
+        <input type="checkbox" class="friendChk" value="{{ f.id }}" data-name="{{ f.username }}" hidden>
+        <div class="chk-ui"></div>
+    </label>
+    {% endfor %}
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+const els = {
+    form: postForm,
+    txt: content,
+    imgInp: imgInput,
+    fileInp: fileInput,
+    imgPre: imgPreview,
+    filePre: filePreview,
+    tagPre: tagPreview,
+    submit: submitBtn,
+    privacySel: privacySelect,
+    privacyInp: privacyInput
+};
+
+let state = { images: [], files: [], tags: [] };
+
+const updateBtn = () => {
+    els.submit.disabled = !(els.txt.value.trim() || state.images.length || state.files.length);
+};
+
+els.txt.oninput = updateBtn;
+els.privacySel.onchange = () => els.privacyInp.value = els.privacySel.value;
+
+imgBtn.onclick = () => els.imgInp.click();
+fileBtn.onclick = () => els.fileInp.click();
+
+els.imgInp.onchange = e => {
+    state.images.push(...e.target.files);
+    renderImg(); updateBtn();
+};
+
+els.fileInp.onchange = e => {
+    state.files.push(...e.target.files);
+    renderFile(); updateBtn();
+};
+
+function renderImg() {
+    els.imgPre.innerHTML = '';
+    state.images.forEach((f,i)=>{
+        const r=new FileReader();
+        r.onload=e=>{
+            els.imgPre.innerHTML += `<div class="preview-item">
+                <img src="${e.target.result}">
+                <div class="remove-btn" onclick="rmImg(${i})">&times;</div>
+            </div>`;
+        }; r.readAsDataURL(f);
+    });
+    els.imgPre.classList.toggle('active', state.images.length);
+}
+
+function renderFile() {
+    els.filePre.innerHTML='';
+    state.files.forEach((f,i)=>{
+        els.filePre.innerHTML += `<div class="file-item">
+            ${f.name}
+            <span onclick="rmFile(${i})" style="cursor:pointer;color:red">&times;</span>
+        </div>`;
+    });
+    els.filePre.classList.toggle('active', state.files.length);
+}
+
+window.rmImg=i=>{ state.images.splice(i,1); renderImg(); updateBtn(); };
+window.rmFile=i=>{ state.files.splice(i,1); renderFile(); updateBtn(); };
+
+els.form.onsubmit = async e => {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append('content', els.txt.value);
+    fd.append('privacy', els.privacyInp.value);
+    state.images.forEach(f=>fd.append('images',f));
+    state.files.forEach(f=>fd.append('files',f));
+    state.tags.forEach(id=>fd.append('tagged_users',id));
+    fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    const res = await fetch(location.href,{method:'POST',body:fd});
+    if(res.redirected) location.href=res.url;
+};
+});
+</script>
 {% endblock %}

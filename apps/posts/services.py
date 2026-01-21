@@ -146,12 +146,60 @@ def create_post(
     return post
 
 @transaction.atomic
-def update_post(post, content=None, privacy=None):
+def update_post(
+    post, 
+    content=None, 
+    privacy=None, 
+    tagged_users=None, 
+    images=None, 
+    files=None, 
+    location_name=None,
+    delete_image_ids=None, # <--- Thêm tham số này
+    delete_file_ids=None   # <--- Thêm tham số này
+):
     """Cập nhật bài viết"""
+    
+    # 1. Cập nhật thông tin cơ bản
     if content is not None:
         post.content = content
     if privacy is not None:
         post.privacy = privacy
+    
+    # 2. Xử lý Tag user
+    if tagged_users is not None:
+        PostTagUser.objects.filter(post=post).exclude(user__id__in=tagged_users).delete()
+        for uid in tagged_users:
+            PostTagUser.objects.get_or_create(post=post, user_id=uid)
+
+    # 3. Xử lý Ảnh (Logic mới: Xóa ảnh cũ -> Thêm ảnh mới)
+    # A. Xóa các ảnh cũ được yêu cầu
+    if delete_image_ids:
+        PostImage.objects.filter(post=post, id__in=delete_image_ids).delete()
+
+    # B. Thêm ảnh mới (nếu có)
+    if images:
+        # Lấy thứ tự order tiếp theo để không bị trùng
+        current_count = PostImage.objects.filter(post=post).count()
+        for i, image in enumerate(images):
+            PostImage.objects.create(post=post, image=image, order=current_count + i)
+
+    # 4. Xử lý File
+    # A. Xóa file cũ
+    if delete_file_ids:
+        PostFile.objects.filter(post=post, id__in=delete_file_ids).delete()
+    
+    # B. Thêm file mới
+    if files:
+        for file in files:
+            PostFile.objects.create(post=post, file=file, filename=file.name)
+
+    # 5. Xử lý Location
+    if location_name is not None:
+        if location_name == "":
+            remove_location(post)
+        else:
+            add_location(post, location_name, 0.0, 0.0)
+
     post.updated_at = timezone.now()
     post.save()
     
@@ -431,3 +479,8 @@ def remove_location(post):
     """Xóa vị trí khỏi bài viết"""
     if hasattr(post, 'location'):
         post.location.delete()
+
+def list_people_tag(user):
+    """Liệt kê bạn bè để tag vào bài viết"""
+    friends = Friend.objects.filter(user=user).select_related('friend')
+    return [f.friend for f in friends]
