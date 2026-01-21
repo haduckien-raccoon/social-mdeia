@@ -154,46 +154,57 @@ def update_post(
     images=None, 
     files=None, 
     location_name=None,
-    delete_image_ids=None, # <--- Thêm tham số này
-    delete_file_ids=None   # <--- Thêm tham số này
+    delete_image_ids=None,
+    delete_file_ids=None
 ):
     """Cập nhật bài viết"""
     
-    # 1. Cập nhật thông tin cơ bản
+    # 1. Update Basic Info
     if content is not None:
         post.content = content
     if privacy is not None:
         post.privacy = privacy
     
-    # 2. Xử lý Tag user
+    # 2. Update Tags (ĐÃ FIX LỖI 1452 Ở ĐÂY)
     if tagged_users is not None:
-        PostTagUser.objects.filter(post=post).exclude(user__id__in=tagged_users).delete()
+        # A. Lọc danh sách ID hợp lệ (tránh chuỗi rỗng hoặc ID không tồn tại)
+        valid_user_ids = set()
         for uid in tagged_users:
+            try:
+                uid_int = int(uid)
+                valid_user_ids.add(uid_int)
+            except (ValueError, TypeError):
+                continue
+        
+        # B. Kiểm tra user có thực sự tồn tại trong DB không
+        existing_user_ids = set(User.objects.filter(id__in=valid_user_ids).values_list('id', flat=True))
+
+        # C. Đồng bộ tags
+        # - Xóa những người không còn trong list tag mới
+        PostTagUser.objects.filter(post=post).exclude(user_id__in=existing_user_ids).delete()
+        
+        # - Thêm những người mới (dùng get_or_create để không bị duplicate)
+        for uid in existing_user_ids:
             PostTagUser.objects.get_or_create(post=post, user_id=uid)
 
-    # 3. Xử lý Ảnh (Logic mới: Xóa ảnh cũ -> Thêm ảnh mới)
-    # A. Xóa các ảnh cũ được yêu cầu
+    # 3. Update Images
     if delete_image_ids:
         PostImage.objects.filter(post=post, id__in=delete_image_ids).delete()
 
-    # B. Thêm ảnh mới (nếu có)
     if images:
-        # Lấy thứ tự order tiếp theo để không bị trùng
         current_count = PostImage.objects.filter(post=post).count()
         for i, image in enumerate(images):
             PostImage.objects.create(post=post, image=image, order=current_count + i)
 
-    # 4. Xử lý File
-    # A. Xóa file cũ
+    # 4. Update Files
     if delete_file_ids:
         PostFile.objects.filter(post=post, id__in=delete_file_ids).delete()
     
-    # B. Thêm file mới
     if files:
         for file in files:
             PostFile.objects.create(post=post, file=file, filename=file.name)
 
-    # 5. Xử lý Location
+    # 5. Update Location
     if location_name is not None:
         if location_name == "":
             remove_location(post)
@@ -203,7 +214,6 @@ def update_post(
     post.updated_at = timezone.now()
     post.save()
     
-    # Realtime broadcast
     send_ws_message(f"post_{post.id}", "post_event", {
         "event": "post_updated",
         "post_id": post.id,
@@ -311,18 +321,41 @@ def update_comment(user, comment, content):
     })
 
 def delete_comment(user, comment):
-    """Xóa bình luận (soft delete)"""
+    """Xóa bình luận và toàn bộ bình luận con (cascade soft delete)"""
+    # 1. Kiểm tra quyền (Chủ comment hoặc Chủ bài viết mới được xóa)
     if comment.user != user and comment.post.author != user:
-        raise PermissionDenied()
+        raise PermissionDenied("Bạn không có quyền xóa bình luận này.")
     
     post_id = comment.post.id
-    comment_id = comment.id
-    comment.soft_delete()
+    
+    # Danh sách lưu các ID sẽ bị xóa (để gửi socket cho FE cập nhật UI)
+    deleted_ids = []
 
-    # 🚀 Realtime Delete
+    # 2. Hàm đệ quy để tìm và xóa con cháu
+    def recursive_soft_delete(cmt):
+        # Tìm các comment con trực tiếp
+        child_comments = Comment.objects.filter(parent=cmt)
+        
+        # Đệ quy xuống các cấp sâu hơn trước
+        for child in child_comments:
+            recursive_soft_delete(child)
+            
+        # Sau khi xử lý con, xóa chính nó
+        # (Kiểm tra nếu chưa xóa thì mới xóa để tránh lặp)
+        if not cmt.is_deleted:
+            cmt.soft_delete()
+            deleted_ids.append(cmt.id)
+
+    # 3. Thực thi xóa
+    with transaction.atomic():
+        recursive_soft_delete(comment)
+
+    # 4. 🚀 Realtime Delete
+    # Gửi danh sách toàn bộ ID bị xóa để Frontend ẩn đi
     send_ws_message(f"post_{post_id}", "post_event", {
         "event": "comment_deleted",
-        "comment_id": comment_id
+        "comment_id": comment.id,         # ID chính bị click xóa
+        "deleted_ids": deleted_ids        # Danh sách tất cả ID bị ảnh hưởng (bao gồm con)
     })
 
 # =====================================================
@@ -484,3 +517,13 @@ def list_people_tag(user):
     """Liệt kê bạn bè để tag vào bài viết"""
     friends = Friend.objects.filter(user=user).select_related('friend')
     return [f.friend for f in friends]
+
+#lấy  các user đã tag trong post
+def get_tagged_users(post):
+    """Lấy danh sách người dùng đã được tag trong bài viết"""
+    tagged_users = PostTagUser.objects.filter(post=post).select_related('user')
+    return [tag.user for tag in tagged_users]
+
+def get_comment_count(post):
+    """Lấy số lượng bình luận của bài viết"""
+    return Comment.objects.filter(post=post, is_deleted=False).count()

@@ -1,302 +1,412 @@
-{% extends 'posts/base_posts.html' %}
+{% extends 'base.html' %}
+{% load static %}
 
 {% block extra_css %}
-{{ block.super }}
 <style>
-    .comment-wrapper {
-        padding: 8px 0;
-        border-left: 2px solid transparent;
-        margin-bottom: 8px;
-        transition: all 0.3s ease;
+    /* =========================================
+       1. GLOBAL & FACEBOOK VARIABLES
+       ========================================= */
+    :root {
+        --primary: #1877f2;
+        --bg-body: #f0f2f5;
+        --bg-card: #ffffff;
+        --text-main: #050505;
+        --text-sub: #65676b;
+        --hover-bg: #f2f2f2;
+        --divider: #ced0d4;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        --comment-bg: #f0f2f5;
+        --radius: 8px;
     }
-    .comment-wrapper:hover {
-        border-left-color: #e4e6eb;
+
+    body {
+        background-color: var(--bg-body);
+        font-family: Segoe UI, Helvetica, Arial, sans-serif;
     }
-    .comment-bubble {
-        background: #f0f2f5;
-        border-radius: 18px;
-        padding: 8px 12px;
-        display: inline-block;
-        max-width: 100%;
-        word-wrap: break-word;
+
+    .detail-container {
+        max-width: 680px;
+        margin: 20px auto;
+        padding-bottom: 60px;
     }
-    .fade-in {
-        animation: fadeIn 0.5s forwards;
-        opacity: 0;
+
+    /* =========================================
+       2. POST CARD STYLING
+       ========================================= */
+    .fb-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 15px;
+        overflow: visible;
     }
-    @keyframes fadeIn {
-        to { opacity: 1; }
+
+    /* Header */
+    .post-header { padding: 12px 16px; display: flex; align-items: center; }
+    .post-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px; cursor: pointer; }
+    .post-info h4 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-main); }
+    .post-info h4 a { text-decoration: none; color: inherit; }
+    .post-time { font-size: 13px; color: var(--text-sub); display: flex; align-items: center; gap: 4px; }
+
+    /* Content & Share Block */
+    .post-content { padding: 4px 16px 16px; font-size: 15px; color: var(--text-main); line-height: 1.5; }
+    
+    /* STYLE CHO BÀI SHARE (SHARED POST) */
+    .shared-post-container {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin: 0 16px 16px 16px;
+        overflow: hidden;
     }
-    .fade-out {
-        animation: fadeOut 0.5s forwards;
+    .shared-header { padding: 10px; display: flex; align-items: center; background: #f7f8fa; border-bottom: 1px solid #eee; }
+    .shared-avatar { width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; }
+    .shared-info { font-weight: 600; font-size: 14px; }
+    .shared-time { font-size: 12px; color: var(--text-sub); font-weight: normal; }
+    .shared-body { padding: 10px; }
+
+    /* Images */
+    .post-images { display: grid; gap: 2px; background: #fff; cursor: pointer; overflow: hidden; }
+    .post-images img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s; }
+    .grid-1 { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr 1fr; height: 350px; }
+    .grid-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 400px; }
+    .grid-3 img:first-child { grid-row: span 2; }
+    .grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 400px; }
+
+    /* Stats & Actions */
+    .post-stats { padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--divider); font-size: 14px; color: var(--text-sub); }
+    .post-actions { display: flex; padding: 4px 16px; border-bottom: 1px solid var(--divider); position: relative; }
+    .action-btn { flex: 1; display: flex; justify-content: center; align-items: center; height: 36px; border-radius: 4px; color: var(--text-sub); font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; background: transparent; border: none; }
+    .action-btn:hover { background-color: var(--hover-bg); }
+    
+    /* REACTION WRAPPER & POPUP (FIXED HOVER) */
+    .reaction-wrapper { flex: 1; position: relative; display: flex; }
+    .reaction-wrapper::after { content: ''; position: absolute; bottom: 100%; left: 0; width: 100%; height: 20px; display: none; }
+    .reaction-wrapper:hover::after { display: block; }
+    
+    .reaction-popup {
+        position: absolute; bottom: 100%; left: 10px; margin-bottom: 5px;
+        background: #fff; border-radius: 50px; padding: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: none; gap: 8px; z-index: 1000;
+        animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    @keyframes fadeOut {
-        to { opacity: 0; transform: scale(0.95); }
+    .reaction-wrapper:hover .reaction-popup { display: flex; }
+    .emoji-btn { font-size: 24px; cursor: pointer; transition: transform 0.2s; line-height: 1; }
+    .emoji-btn:hover { transform: scale(1.4); }
+
+    /* COMMENT REACTION POPUP */
+    .comment-reaction-wrapper { position: relative; display: inline-block; }
+    .comment-reaction-wrapper::after { content: ''; position: absolute; bottom: 100%; left: 0; width: 100%; height: 10px; display: none; }
+    .comment-reaction-wrapper:hover::after { display: block; }
+    
+    .comment-popup {
+        position: absolute; bottom: 100%; left: -10px; margin-bottom: 5px;
+        background: #fff; border-radius: 50px; padding: 4px 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: none; gap: 5px; z-index: 500;
+        animation: popUp 0.2s ease-out;
     }
+    .comment-reaction-wrapper:hover .comment-popup { display: flex; }
+    .emoji-btn-small { font-size: 20px; cursor: pointer; transition: 0.2s; }
+    .emoji-btn-small:hover { transform: scale(1.4); }
+
+    /* Active Colors */
+    .active-like, .text-like { color: var(--primary) !important; }
+    .active-love, .text-love { color: #f33e58 !important; }
+    .active-haha, .active-wow, .active-sad, .text-haha, .text-wow, .text-sad { color: #f7b125 !important; }
+    .active-angry, .text-angry { color: #e9710f !important; }
+
+    @keyframes popUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* =========================================
+       3. COMMENTS UI
+       ========================================= */
+    .comments-wrapper { padding: 8px 16px; }
+    .comment-input-area { display: flex; gap: 8px; margin-bottom: 16px; align-items: flex-start; }
+    .my-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .input-bubble { flex: 1; background: var(--comment-bg); border-radius: 18px; padding: 8px 12px; display: flex; align-items: center; }
+    .input-bubble input { width: 100%; border: none; background: transparent; outline: none; font-size: 14px; }
+    .input-actions i { color: var(--text-sub); cursor: pointer; margin-left: 8px; font-size: 16px; }
+    
+    .comment-item { margin-bottom: 8px; display: flex; gap: 8px; position: relative; }
+    .thread-line { position: absolute; left: -12px; top: -10px; width: 20px; height: 35px; border-left: 2px solid #e4e6eb; border-bottom: 2px solid #e4e6eb; border-bottom-left-radius: 12px; }
+    .comment-bubble { background: var(--comment-bg); border-radius: 18px; padding: 8px 12px; display: inline-block; max-width: 100%; }
+    .comment-author-name { font-weight: 700; font-size: 13px; color: var(--text-main); text-decoration: none; }
+    .comment-text-content { font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+    .comment-meta { margin-left: 12px; margin-top: 2px; font-size: 12px; color: var(--text-sub); display: flex; gap: 12px; }
+    .meta-action { cursor: pointer; font-weight: 700; text-decoration: none; color: var(--text-sub); }
+    .meta-action:hover { text-decoration: underline; }
+    .meta-action.delete { color: #dc3545; }
+    .cmt-reaction-badge { position: absolute; right: -10px; bottom: -6px; background: #fff; border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); padding: 2px 4px; display: flex; align-items: center; gap: 3px; }
+    .comment-img-preview { max-height: 120px; border-radius: 8px; margin-top: 5px; display: block; }
+
+    /* =========================================
+       4. LIGHTBOX & SHARE MODAL
+       ========================================= */
+    .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; }
+    .lightbox.active { display: flex; animation: fadeIn 0.2s; }
+    .lightbox-content { max-width: 90%; max-height: 85vh; object-fit: contain; transition: opacity 0.15s; }
+    .lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; cursor: pointer; z-index: 10001; }
+    .lightbox-nav { position: absolute; top: 50%; color: #fff; font-size: 30px; cursor: pointer; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 50%; margin-top: -30px; z-index: 10000; }
+    
+    .share-modal { position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000; }
+    .share-box { background: #fff; width: 100%; max-width: 500px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); border: 1px solid #ddd; overflow: hidden; }
+    .share-header { padding: 15px; border-bottom: 1px solid #eee; text-align: center; font-weight: 700; font-size: 20px; position: relative; }
+    .share-body { padding: 15px; }
+    .share-user { display: flex; align-items: center; margin-bottom: 15px; }
+    .share-user img { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
+    .share-privacy { background: #e4e6eb; border: none; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .share-caption { width: 100%; border: none; outline: none; font-size: 16px; resize: none; min-height: 80px; margin-bottom: 15px; }
+    .share-preview { border: 1px solid #ced0d4; border-radius: 8px; padding: 10px; margin-bottom: 15px; background: #f7f8fa; }
+    .share-actions { display: flex; justify-content: flex-end; gap: 10px; }
+    .btn-share-submit { background: #0064fb;; color: #fff; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .btn-share-cancel { background: #e4e6eb; color: var(--text-main); border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+
+    .fade-in { animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 </style>
 {% endblock %}
 
-{% block posts_content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        
-        <!-- Post Card -->
-        {% include 'posts/includes/post_card.html' %}
+{% block content %}
+<div class="detail-container">
 
-        <!-- Comments Section -->
-        <div class="card mt-3 border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom">
-                <div class="d-flex justify-content-between align-items-center">
-                    <strong><i class="fas fa-comments me-2"></i>Bình luận (<span id="total-comments">{{ total_comments }}</span>)</strong>
-                    {% if post.author == request.user %}
-                        <button class="btn btn-sm btn-outline-secondary" onclick="alert('Cài đặt')">
-                            <i class="fas fa-cog"></i> Cài đặt
-                        </button>
-                    {% endif %}
+    <div class="fb-card" id="post-{{ post.id }}">
+        
+        <div class="post-header">
+            <img src="{{ post.author.userprofile.avatar.url|default:'https://ui-avatars.com/api/?name='|add:post.author.username }}" class="post-avatar">
+            <div class="post-info">
+                <h4><a href="#">{{ post.author.username }}</a></h4>
+                <div class="post-time">
+                    <span>{{ post.created_at|timesince }} trước</span> • 
+                    {% if post.privacy == 'public' %}<i class="fas fa-globe-americas"></i>
+                    {% elif post.privacy == 'friends' %}<i class="fas fa-user-friends"></i>
+                    {% else %}<i class="fas fa-lock"></i>{% endif %}
                 </div>
             </div>
-            
-            <div class="card-body">
-                <!-- Comment Input -->
-                <div class="d-flex gap-2 mb-4">
-                    <img src="{{ request.user.userprofile.avatar.url|default:'https://ui-avatars.com/api/?name='|add:request.user.username }}" 
-                         class="rounded-circle" width="36" height="36">
-                    <form onsubmit="event.preventDefault(); submitComment({{ post.id }});" class="flex-grow-1">
-                        <div class="input-group">
-                            <input id="main-comment-input" 
-                                   class="form-control rounded-pill bg-light border-0" 
-                                   placeholder="Viết bình luận..."
-                                   autocomplete="off">
-                            <button type="submit" class="btn btn-link">
-                                <i class="fas fa-paper-plane text-primary"></i>
-                            </button>
-                        </div>
-                    </form>
-                </div>
+            {% if request.user == post.author %}
+            <div style="margin-left: auto;">
+                <a href="{% url 'posts:edit_post' post.id %}" class="btn btn-sm btn-light rounded-circle"><i class="fas fa-pen"></i></a>
+                <a href="#" onclick="if(confirm('Xóa bài?')) document.getElementById('del-post').submit()" class="btn btn-sm btn-light rounded-circle"><i class="fas fa-trash"></i></a>
+                <form id="del-post" action="{% url 'posts:delete_post' post.id %}" method="POST" hidden>{% csrf_token %}</form>
+            </div>
+            {% endif %}
+        </div>
 
-                <!-- Comments List -->
-                <div id="comments-list">
-                    {% for comment in comments %}
-                        <div class="comment-wrapper fade-in" 
-                             id="comment-{{ comment.id }}" 
-                             style="margin-left: {{ comment.index_px }}px;">
-                            <div class="d-flex gap-2">
-                                <img src="https://ui-avatars.com/api/?name={{ comment.user.username }}" 
-                                     class="rounded-circle" width="36" height="36">
-                                <div class="flex-grow-1">
-                                    <div class="comment-bubble">
-                                        <div class="fw-bold small mb-1">{{ comment.user.username }}</div>
-                                        <div class="text-body" id="comment-content-{{ comment.id }}">{{ comment.content }}</div>
+        <div class="post-content">{{ post.content|linebreaksbr }}</div>
+
+        {% if post.postshare %}
+        <div class="shared-post-container">
+            <div class="shared-header">
+                <img src="{{ post.postshare.original_post.author.userprofile.avatar.url|default:'https://ui-avatars.com/api/?name='|add:post.postshare.original_post.author.username }}" class="shared-avatar">
+                <div>
+                    <div class="shared-info">{{ post.postshare.original_post.author.username }}</div>
+                    <div class="shared-time">{{ post.postshare.original_post.created_at|timesince }} trước</div>
+                </div>
+            </div>
+            <div class="shared-body">
+                <div style="margin-bottom: 10px;">{{ post.postshare.original_post.content|linebreaksbr }}</div>
+                
+                {% if post.postshare.original_post.images.all %}
+                <div class="post-images grid-{{ post.postshare.original_post.images.count|default:1 }}">
+                    {% for img in post.postshare.original_post.images.all|slice:":4" %}
+                        <img src="{{ img.image.url }}" onclick="openLightbox({{ forloop.counter0 }}, true)"> {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if post.images.all and not post.postshare %}
+            <div class="post-images grid-{{ post.images.count|default:1 }}">
+                {% for img in post.images.all|slice:":4" %}
+                    <img src="{{ img.image.url }}" onclick="openLightbox({{ forloop.counter0 }})">
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="post-stats">
+            <div class="reaction-count">
+                {% if total_reactions > 0 %}
+                    <i class="fas fa-thumbs-up text-primary"></i> <span id="post-reaction-count">{{ total_reactions }}</span>
+                {% else %}
+                    <span>Hãy là người đầu tiên thích bài này</span>
+                {% endif %}
+            </div>
+            <div class="comment-count"><span id="total-comments-label">{{ total_comments }}</span> bình luận</div>
+        </div>
+
+        <div class="post-actions">
+            <div class="reaction-wrapper">
+                <div class="reaction-popup">
+                    <span class="emoji-btn" onclick="submitPostReaction('like')">👍</span>
+                    <span class="emoji-btn" onclick="submitPostReaction('love')">❤️</span>
+                    <span class="emoji-btn" onclick="submitPostReaction('haha')">😆</span>
+                    <span class="emoji-btn" onclick="submitPostReaction('wow')">😮</span>
+                    <span class="emoji-btn" onclick="submitPostReaction('sad')">😢</span>
+                    <span class="emoji-btn" onclick="submitPostReaction('angry')">😡</span>
+                </div>
+                <button class="action-btn {% if post.current_user_reaction %}active-{{ post.current_user_reaction }}{% endif %}" 
+                        id="main-like-btn" onclick="submitPostReaction('like')" style="width: 100%;">
+                    {% if post.current_user_reaction == 'like' %} <i class="fas fa-thumbs-up"></i> Thích
+                    {% elif post.current_user_reaction == 'love' %} <i class="fas fa-heart"></i> Yêu thích
+                    {% elif post.current_user_reaction == 'haha' %} <i class="fas fa-laugh-squint"></i> Haha
+                    {% elif post.current_user_reaction == 'sad' %} <i class="fas fa-sad-tear"></i> Buồn
+                    {% elif post.current_user_reaction == 'wow' %} <i class="fas fa-surprise"></i> Wow
+                    {% elif post.current_user_reaction == 'angry' %} <i class="fas fa-angry"></i> Phẫn nộ
+                    {% else %} <i class="far fa-thumbs-up"></i> Thích
+                    {% endif %}
+                </button>
+            </div>
+            <button class="action-btn" onclick="document.getElementById('main-comment-input').focus()"><i class="far fa-comment-alt"></i> Bình luận</button>
+            <button class="action-btn" onclick="openShareModal()"><i class="fas fa-share"></i> Chia sẻ</button>
+        </div>
+
+        <div class="comments-wrapper">
+            <div class="comment-input-area">
+                <img src="{{ request.user.userprofile.avatar.url|default:'https://ui-avatars.com/api/?name='|add:request.user.username }}" class="my-avatar">
+                <div class="input-bubble">
+                    <input type="text" id="main-comment-input" placeholder="Viết bình luận..." autocomplete="off" onkeydown="if(event.key === 'Enter') submitComment({{ post.id }})">
+                    <div class="input-actions">
+                        <label for="comment-files" style="margin:0"><i class="fas fa-camera"></i></label>
+                        <i class="fas fa-paper-plane text-primary" onclick="submitComment({{ post.id }})"></i>
+                    </div>
+                    <input type="file" id="comment-files" hidden multiple accept="image/*">
+                </div>
+            </div>
+            <div id="main-preview" style="padding-left: 40px; margin-bottom: 10px;"></div>
+
+            <div id="comments-list">
+                {% for comment in comments %}
+                    <div class="comment-item fade-in" id="comment-{{ comment.id }}" style="padding-left: {{ comment.index_px }}px;">
+                        <div class="d-flex position-relative w-100">
+                            {% if comment.level > 1 %}<div class="thread-line"></div>{% endif %}
+                            <img src="https://ui-avatars.com/api/?name={{ comment.user.username }}" class="my-avatar" style="margin-right: 8px;">
+                            <div style="flex: 1;">
+                                <div class="comment-bubble">
+                                    <a href="#" class="comment-author-name">{{ comment.user.username }}</a>
+                                    <div class="comment-text-content">{{ comment.content }}</div>
+                                    {% if comment.images.all %}
+                                        {% for img in comment.images.all %}<img src="{{ img.image.url }}" class="comment-img-preview">{% endfor %}
+                                    {% endif %}
+                                    <div class="cmt-reaction-badge" id="comment-badge-{{ comment.id }}" 
+                                         style="display: {% if comment.likes_count > 0 %}flex{% else %}none{% endif %} !important;">
+                                        <i class="fas fa-thumbs-up"></i><span id="comment-count-{{ comment.id }}">{{ comment.likes_count }}</span>
                                     </div>
+                                </div>
+                                <div class="comment-meta">
+                                    <span>{{ comment.created_at|timesince }}</span>
                                     
-                                    <!-- Comment Actions -->
-                                    <div class="small mt-1 text-muted d-flex gap-3 ps-2">
-                                        <span class="text-muted" style="font-size: 11px;">Vừa xong</span>
-                                        
-                                        <a href="#" 
-                                           onclick="toggleCommentLike({{ comment.id }}); return false;" 
-                                           class="text-decoration-none {% if comment.user_reaction %}text-primary fw-bold{% else %}text-muted{% endif %}"
-                                           id="comment-like-{{ comment.id }}">
-                                            Thích (<span id="clike-{{ comment.id }}">{{ comment.reaction_count }}</span>)
-                                        </a>
-                                        
-                                        {% if comment.level < 7 %}
-                                        <a href="#" 
-                                           onclick="showReply({{ comment.id }}); return false;" 
-                                           class="text-decoration-none text-muted">
-                                            Trả lời
-                                        </a>
-                                        {% endif %}
-                                        
-                                        {% if request.user == comment.user or request.user == post.author %}
-                                            <a href="#" 
-                                               onclick="deleteComment({{ comment.id }}); return false;" 
-                                               class="text-danger text-decoration-none">
-                                                Xóa
-                                            </a>
-                                        {% endif %}
-                                    </div>
-                                    
-                                    <!-- Reply Input (Hidden by default) -->
-                                    <div id="reply-box-{{ comment.id }}" class="mt-2 d-none">
-                                        <div class="input-group input-group-sm">
-                                            <!-- <input class="form-control rounded-pill" 
-                                                   placeholder="Trả lời {{ comment.user.username }}..." 
-                                                   onkeydown="if(event.key==='Enter') submitComment({{ comment.id }}, this)"> -->
-                                            <input type="text" id="reply-input-{{ comment.id }}" 
-                                                   class="form-control form-control-sm rounded-pill bg-light" 
-                                                   placeholder="Trả lời {{ comment.user.username }}..."
-                                                   onkeydown="if(event.key === 'Enter') submitComment({{ post.id }}, {{ comment.id }})">
+                                    <div class="comment-reaction-wrapper">
+                                        <div class="comment-popup">
+                                            <span class="emoji-btn-small" onclick="submitCommentReaction({{ comment.id }}, 'like')">👍</span>
+                                            <span class="emoji-btn-small" onclick="submitCommentReaction({{ comment.id }}, 'love')">❤️</span>
+                                            <span class="emoji-btn-small" onclick="submitCommentReaction({{ comment.id }}, 'haha')">😆</span>
+                                            <span class="emoji-btn-small" onclick="submitCommentReaction({{ comment.id }}, 'wow')">😮</span>
+                                            <span class="emoji-btn-small" onclick="submitCommentReaction({{ comment.id }}, 'sad')">😢</span>
+                                            <span class="emoji-btn-small" onclick="submitCommentReaction({{ comment.id }}, 'angry')">😡</span>
                                         </div>
+                                        <a href="#" onclick="submitCommentReaction({{ comment.id }}, 'like'); return false;" 
+                                           class="meta-action {% if comment.current_reaction %}text-{{ comment.current_reaction }}{% endif %}"
+                                           id="btn-comment-txt-{{ comment.id }}">
+                                           {% if comment.current_reaction == 'like' %}Thích
+                                           {% elif comment.current_reaction == 'love' %}Yêu thích
+                                           {% elif comment.current_reaction == 'haha' %}Haha
+                                           {% elif comment.current_reaction == 'wow' %}Wow
+                                           {% elif comment.current_reaction == 'sad' %}Buồn
+                                           {% elif comment.current_reaction == 'angry' %}Phẫn nộ
+                                           {% else %}Thích{% endif %}
+                                        </a>
+                                    </div>
+
+                                    <a href="#" onclick="showReplyForm({{ comment.id }}); return false;" class="meta-action">Phản hồi</a>
+                                    {% if request.user == comment.user or request.user == post.author %}
+                                    <a href="#" onclick="deleteComment({{ comment.id }}); return false;" class="meta-action delete">Xóa</a>
+                                    {% endif %}
+                                </div>
+                                <div id="reply-form-{{ comment.id }}" class="mt-2 d-none fade-in">
+                                    <div class="d-flex align-items-center gap-2">
+                                         <img src="https://ui-avatars.com/api/?name={{ request.user.username }}" class="my-avatar" style="width: 24px; height: 24px;">
+                                         <div class="input-bubble" style="padding: 4px 10px;">
+                                            <input type="text" id="reply-input-{{ comment.id }}" placeholder="Trả lời..." 
+                                                   onkeydown="if(event.key === 'Enter') submitComment({{ post.id }}, {{ comment.id }})">
+                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    {% empty %}
-                        <div class="text-center text-muted py-4" id="no-comments">
-                            <i class="fas fa-comment-slash fa-2x mb-2"></i>
-                            <p>Chưa có bình luận nào. Hãy là người đầu tiên!</p>
-                        </div>
-                    {% endfor %}
-                </div>
+                    </div>
+                {% empty %}
+                    <div class="text-center p-4 text-muted" id="no-comments">Chưa có bình luận nào.</div>
+                {% endfor %}
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-<!-- {% block posts_scripts %}
-<script>
-    const POST_ID = "{{ post.id }}";
-    const CURRENT_USER = "{{ request.user.username }}";
-    const CURRENT_USER_AVATAR = "{{ request.user.userprofile.avatar.url|default:'https://ui-avatars.com/api/?name='|add:request.user.username }}";
-
-    // ========================================
-    // WEBSOCKET CONNECTION FOR POST
-    // ========================================
-    const wsProto = window.location.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(`${wsProto}://${window.location.host}/ws/post/${POST_ID}/`);
-
-    socket.onopen = function(e) {
-        console.log('✅ Post WebSocket connected');
-    };
-
-    socket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        console.log('📨 Post event:', data);
-        handleRealtimeEvent(data);
-    };
-
-    socket.onerror = function(e) {
-        console.error('❌ Post WebSocket error:', e);
-    };
-
-    socket.onclose = function(e) {
-        console.log('🔌 Post WebSocket closed');
-    };
-
-    // ========================================
-    // REALTIME EVENT HANDLERS
-    // ========================================
-    function handleRealtimeEvent(data) {
-        switch(data.event) {
-            case 'reaction':
-                updatePostReaction(data);
-                break;
-            case 'comment_new':
-                appendComment(data);
-                break;
-            case 'comment_reaction':
-                updateCommentReaction(data);
-                break;
-            case 'comment_deleted':
-                removeComment(data.comment_id);
-                break;
-            case 'comment_updated':
-                updateCommentContent(data.comment_id, data.content);
-                break;
-        }
-    }
-
-    function updatePostReaction(data) {
-        const countEl = document.getElementById(`reaction-count-${POST_ID}`);
-        if (countEl) {
-            countEl.innerText = data.total_count;
-        }
-    }
-
-    function appendComment(data) {
-        const noComments = document.getElementById('no-comments');
-        if (noComments) noComments.remove();
-        
-        const indent = (data.level - 1) * 20;
-        const isOwn = data.user === CURRENT_USER;
-        
-        const html = `
-        <div class="comment-wrapper fade-in" id="comment-${data.comment_id}" style="margin-left: ${indent}px;">
-            <div class="d-flex gap-2">
-                <img src="${data.avatar}" class="rounded-circle" width="36" height="36">
-                <div class="flex-grow-1">
-                    <div class="comment-bubble">
-                        <div class="fw-bold small mb-1">${escapeHtml(data.user)}</div>
-                        <div class="text-body" id="comment-content-${data.comment_id}">${escapeHtml(data.content)}</div>
-                    </div>
-                    <div class="small mt-1 text-muted d-flex gap-3 ps-2">
-                        <span class="text-muted" style="font-size: 11px;">Vừa xong</span>
-                        <a href="#" onclick="toggleCommentLike(${data.comment_id}); return false;" 
-                           class="text-decoration-none text-muted" id="comment-like-${data.comment_id}">
-                            Thích (<span id="clike-${data.comment_id}">0</span>)
-                        </a>
-                        ${data.level < 7 ? `<a href="#" onclick="showReply(${data.comment_id}); return false;" class="text-decoration-none text-muted">Trả lời</a>` : ''}
-                        ${isOwn ? `<a href="#" onclick="deleteComment(${data.comment_id}); return false;" class="text-danger text-decoration-none">Xóa</a>` : ''}
-                    </div>
-                    <div id="reply-box-${data.comment_id}" class="mt-2 d-none">
-                        <div class="input-group input-group-sm">
-                            <input class="form-control rounded-pill" placeholder="Trả lời ${escapeHtml(data.user)}..." 
-                                   onkeydown="if(event.key==='Enter') submitComment(${data.comment_id}, this)">
-                        </div>
-                    </div>
+<div id="shareModal" class="share-modal" onclick="closeShareModal(event)">
+    <div class="share-box">
+        <div class="share-header">
+            Chia sẻ bài viết
+            <span class="close-btn" onclick="closeShareModal()" style="right: 10px; width: 30px; height: 30px; font-size: 20px; position:absolute; cursor:pointer;">&times;</span>
+        </div>
+        <form action="{% url 'posts:share_post' post.id %}" method="POST" class="share-body">
+            {% csrf_token %}
+            <div class="share-user">
+                <img src="{{ request.user.userprofile.avatar.url|default:'https://ui-avatars.com/api/?name='|add:request.user.username }}">
+                <div>
+                    <div style="font-weight: 600;">{{ request.user.username }}</div>
+                    <select name="privacy" class="share-privacy">
+                        <option value="public">🌍 Công khai</option>
+                        <option value="friends">👥 Bạn bè</option>
+                        <option value="only_me">🔒 Chỉ mình tôi</option>
+                    </select>
                 </div>
             </div>
-        </div>`;
-        
-        if (data.parent_id) {
-            const parent = document.getElementById(`comment-${data.parent_id}`);
-            if (parent) {
-                parent.insertAdjacentHTML('afterend', html);
-            }
-        } else {
-            document.getElementById('comments-list').insertAdjacentHTML('beforeend', html);
-        }
-        
-        updateTotalComments(1);
-    }
+            <textarea name="caption" class="share-caption" placeholder="Hãy nói gì đó về nội dung này..."></textarea>
+            <div class="share-preview">
+                <div class="share-preview-info">Bài viết của {{ post.author.username }}</div>
+                <div class="share-preview-content">
+                    {% if post.postshare %}
+                        {{ post.postshare.original_post.content|truncatechars:100 }}
+                    {% else %}
+                        {{ post.content|truncatechars:100 }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="share-actions">
+                <button type="button" class="btn-share-cancel" onclick="closeShareModal()">Hủy</button>
+                <button type="submit" class="btn-share-submit">Chia sẻ ngay</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    function updateCommentReaction(data) {
-        const el = document.getElementById(`clike-${data.comment_id}`);
-        if (el) {
-            el.innerText = data.count;
-        }
-    }
+<div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+    <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+    <div class="nav-prev lightbox-nav" onclick="changeImg(-1, event)">&#10094;</div>
+    <div class="nav-next lightbox-nav" onclick="changeImg(1, event)">&#10095;</div>
+    <img id="lightbox-img" class="lightbox-content" src="" onclick="event.stopPropagation()">
+    <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
 
-    function removeComment(commentId) {
-        const el = document.getElementById(`comment-${commentId}`);
-        if (el) {
-            el.classList.add('fade-out');
-            setTimeout(() => {
-                el.remove();
-                updateTotalComments(-1);
-            }, 500);
-        }
-    }
-
-    function updateCommentContent(commentId, content) {
-        const el = document.getElementById(`comment-content-${commentId}`);
-        if (el) {
-            el.innerText = content;
-        }
-    }
-
-    function updateTotalComments(delta) {
-        const el = document.getElementById('total-comments');
-        if (el) {
-            const current = parseInt(el.innerText) || 0;
-            el.innerText = Math.max(0, current + delta);
-        }
-    }
-</script>
-{% endblock %} -->
-
-{% block scripts %}
 <script>
-    // --- 1. CSRF TOKEN HELPER (BẮT BUỘC ĐỂ TƯƠNG TÁC) ---
-    function getCookie(name) {
+    // DATA IMAGES (Xử lý cả bài thường và bài share)
+    const ALL_POST_IMAGES = [
+        {% if post.postshare %}
+            {% for img in post.postshare.original_post.images.all %}"{{ img.image.url }}",{% endfor %}
+        {% else %}
+            {% for img in post.images.all %}"{{ img.image.url }}",{% endfor %}
+        {% endif %}
+    ];
+
+    const POST_ID = "{{ post.id }}";
+    const CURRENT_USER = "{{ request.user.username }}";
+    
+    const getCookie = (name) => {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
             for (let i = 0; i < cookies.length; i++) {
                 const cookie = cookies[i].trim();
-                // Does this cookie string begin with the name we want?
                 if (cookie.substring(0, name.length + 1) === (name + '=')) {
                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
@@ -304,109 +414,182 @@
             }
         }
         return cookieValue;
+    };
+    const csrftoken = getCookie('csrftoken');
+
+    // --- REACTION FUNCTIONS ---
+    function updatePostReactionUI(type) {
+        const btn = document.getElementById('main-like-btn');
+        btn.className = 'action-btn'; 
+        if (!type) {
+            btn.innerHTML = '<i class="far fa-thumbs-up"></i> Thích';
+        } else {
+            btn.classList.add(`active-${type}`);
+            const map = { 'like':'Thích', 'love':'Yêu thích', 'haha':'Haha', 'wow':'Wow', 'sad':'Buồn', 'angry':'Phẫn nộ' };
+            const icons = { 'like':'thumbs-up', 'love':'heart', 'haha':'laugh-squint', 'wow':'surprise', 'sad':'sad-tear', 'angry':'angry' };
+            btn.innerHTML = `<i class="fas fa-${icons[type]}"></i> ${map[type]}`;
+        }
     }
-    // Ensure csrftoken is declared only once globally
-        if (typeof csrftoken === 'undefined') {
-            const csrftoken = getCookie('csrftoken'); // Token dùng cho mọi request
-        }
 
-    // --- 2. CONFIGURATION ---
-    const POST_ID = "{{ post.id }}";
-    const CURRENT_USER = "{{ request.user.username }}";
-    const REACTION_CONFIG = {
-        'like':  { icon: 'fa-thumbs-up', colorClass: 'text-primary', label: 'Thích' },
-        'love':  { icon: 'fa-heart',     colorClass: 'text-danger',  label: 'Yêu thích' },
-        'haha':  { icon: 'fa-laugh-squint', colorClass: 'text-warning', label: 'Haha' },
-        'wow':   { icon: 'fa-surprise',  colorClass: 'text-warning', label: 'Wow' },
-        'sad':   { icon: 'fa-sad-tear',  colorClass: 'text-warning', label: 'Buồn' },
-        'angry': { icon: 'fa-angry',     colorClass: 'text-danger',  label: 'Phẫn nộ' }
+    function submitPostReaction(type) {
+        fetch(`/posts/${POST_ID}/reaction/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `reaction=${type}`
+        }).then(res => res.json()).then(data => {
+            updatePostReactionUI(data.status === 'removed' ? null : type);
+            document.getElementById('post-reaction-count').innerText = data.total_count;
+        });
+    }
+
+    // --- FIX: COMMENT REACTION LOGIC ---
+    function submitCommentReaction(commentId, type) {
+        // Gửi request
+        fetch(`/posts/comment/${commentId}/reaction/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `reaction=${type}`
+        }).then(res => res.json()).then(data => {
+            // Cập nhật UI ngay lập tức (dựa vào response từ server)
+            updateCommentReactionUI(commentId, data.status === 'removed' ? null : type, data.count);
+        });
+    }
+
+    function updateCommentReactionUI(commentId, type, count) {
+        // 1. Update Text Color & Content
+        const btnText = document.getElementById(`btn-comment-txt-${commentId}`);
+        if(btnText) {
+            btnText.className = 'meta-action'; // Reset
+            const map = { 'like':'Thích', 'love':'Yêu thích', 'haha':'Haha', 'wow':'Wow', 'sad':'Buồn', 'angry':'Phẫn nộ' };
+            if(!type) {
+                btnText.innerText = 'Thích';
+            } else {
+                btnText.classList.add(`text-${type}`);
+                btnText.innerText = map[type];
+            }
+        }
+        // 2. Update Count & Icon Badge
+        const badge = document.getElementById(`comment-badge-${commentId}`);
+        const countSpan = document.getElementById(`comment-count-${commentId}`);
+        if(countSpan) countSpan.innerText = count;
+        if(badge) badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+
+    // --- SHARE MODAL ---
+    function openShareModal() {
+        document.getElementById('shareModal').style.display = 'flex';
+        document.querySelector('.share-caption').focus();
+    }
+    function closeShareModal(e) {
+        if (!e || e.target.id === 'shareModal' || e.target.classList.contains('close-btn') || e.target.classList.contains('btn-share-cancel')) {
+            document.getElementById('shareModal').style.display = 'none';
+        }
+    }
+
+    // --- COMMENT CRUD & WEBSOCKET (GIỮ NGUYÊN) ---
+    window.submitComment = function(postId, parentId = null) {
+        const inputId = parentId ? `reply-input-${parentId}` : 'main-comment-input';
+        const input = document.getElementById(inputId);
+        const content = input.value.trim();
+        const fileInput = document.getElementById('comment-files');
+        if (!content && (!fileInput || fileInput.files.length === 0)) return;
+        let formData = new FormData();
+        formData.append('content', content);
+        if (parentId) formData.append('parent_id', parentId);
+        if (!parentId && fileInput && fileInput.files.length > 0) {
+            for (let i = 0; i < fileInput.files.length; i++) formData.append('images', fileInput.files[i]);
+        }
+        fetch(`/posts/${postId}/comment/`, {
+            method: 'POST', headers: { 'X-CSRFToken': csrftoken }, body: formData
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'ok') {
+                input.value = '';
+                if(parentId) document.getElementById(`reply-form-${parentId}`).classList.add('d-none');
+                else { document.getElementById('main-preview').innerHTML = ''; fileInput.value = ''; }
+            }
+        });
     };
 
-    // --- 3. WEBSOCKET SETUP ---
+    window.deleteComment = function(id) {
+        if(confirm("Xóa bình luận?")) fetch(`/posts/comment/${id}/delete/`, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
+    };
+
+    window.showReplyForm = function(id) {
+        document.querySelectorAll('[id^="reply-form-"]').forEach(el => el.classList.add('d-none'));
+        const form = document.getElementById(`reply-form-${id}`);
+        form.classList.remove('d-none');
+        setTimeout(() => form.querySelector('input').focus(), 100);
+    };
+
+    // WEBSOCKET
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const chatSocket = new WebSocket(
-        wsScheme + '://' + window.location.host + '/ws/post/' + POST_ID + '/'
-    );
-
+    const chatSocket = new WebSocket(wsScheme + '://' + window.location.host + '/ws/post/' + POST_ID + '/');
     chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        const payload = data.data; // Lưu ý cấu trúc data
-
-        // Nếu gửi từ services.py format: { type: "post_event", data: { event: "...", ... } }
-        // thì payload sẽ chứa key "event". Kiểm tra kỹ format từ services.py của bạn.
-        // Dựa trên services.py tôi đưa:
-        // message_type="post_event", data={ event: "comment_new", ... }
-        
-        const eventType = payload.event; // comment_new, reaction, ...
-
-        if (eventType === 'reaction') {
-            updatePostReactionUI(payload);
-        } else if (eventType === 'comment_reaction') {
-            updateCommentReactionUI(payload);
-        } else if (eventType === 'comment_new') {
-            appendNewComment(payload);
-        } else if (eventType === 'comment_deleted') {
-            removeCommentUI(payload.comment_id);
-        } else if (eventType === 'comment_updated') {
-            // Update logic here
+        const data = JSON.parse(e.data).data;
+        if (data.event === 'comment_new') {
+            document.getElementById('no-comments')?.remove();
+            renderNewComment(data);
+            updateCount(1);
+        } else if (data.event === 'comment_deleted') {
+            if(data.deleted_ids) data.deleted_ids.forEach(id => removeCommentUI(id));
+            else removeCommentUI(data.comment_id);
+        } else if (data.event === 'reaction') {
+            updatePostReactionUI(data.status === 'removed' ? null : data.reaction_type);
+            document.getElementById('post-reaction-count').innerText = data.total_count;
+        } else if (data.event === 'comment_reaction') {
+            // Update realtime cho các user khác
+            updateCommentReactionUI(data.comment_id, data.status === 'removed' ? null : data.reaction_type, data.count);
         }
     };
 
-    chatSocket.onclose = function(e) { console.error('WS Closed'); };
+    function removeCommentUI(id) {
+        const el = document.getElementById(`comment-${id}`);
+        if(el) { el.remove(); updateCount(-1); }
+    }
 
-    // --- 4. UI HANDLERS ---
-    
-    function appendNewComment(data) {
+    function renderNewComment(data) {
         const indent = (data.level - 1) * 20;
-        const threadLine = data.level > 1 ? `<div class="thread-line"></div>` : '';
-        
+        const threadLine = data.level > 1 ? '<div class="thread-line"></div>' : '';
         let mediaHtml = '';
-        if(data.images && data.images.length > 0) {
-            mediaHtml += '<div class="mt-2">';
-            data.images.forEach(url => {
-                mediaHtml += `<img src="${url}" class="rounded-3 border me-1" style="max-height: 120px;">`;
-            });
-            mediaHtml += '</div>';
-        }
-
-        let actionsHtml = `
-            <span class="text-muted fw-normal">Vừa xong</span>
-            <a href="#" id="btn-comment-like-${data.comment_id || data.id}" class="text-decoration-none text-muted" onclick="toggleCommentReaction(${data.comment_id || data.id}); return false;">Thích</a>
-            <a href="#" class="text-muted text-decoration-none" onclick="showReplyForm(${data.comment_id || data.id}); return false;">Phản hồi</a>
-        `;
+        if(data.images) data.images.forEach(url => mediaHtml += `<img src="${url}" class="comment-img-preview">`);
         
-        if (data.user === CURRENT_USER) {
-            actionsHtml += `<a href="#" class="text-danger text-decoration-none" onclick="deleteComment(${data.comment_id || data.id}); return false;">Xóa</a>`;
-        }
+        let reactionHtml = `
+            <div class="comment-reaction-wrapper">
+                <div class="comment-popup">
+                    <span class="emoji-btn-small" onclick="submitCommentReaction(${data.comment_id}, 'like')">👍</span>
+                    <span class="emoji-btn-small" onclick="submitCommentReaction(${data.comment_id}, 'love')">❤️</span>
+                    <span class="emoji-btn-small" onclick="submitCommentReaction(${data.comment_id}, 'haha')">😆</span>
+                    <span class="emoji-btn-small" onclick="submitCommentReaction(${data.comment_id}, 'wow')">😮</span>
+                    <span class="emoji-btn-small" onclick="submitCommentReaction(${data.comment_id}, 'sad')">😢</span>
+                    <span class="emoji-btn-small" onclick="submitCommentReaction(${data.comment_id}, 'angry')">😡</span>
+                </div>
+                <a href="#" onclick="submitCommentReaction(${data.comment_id}, 'like'); return false;" class="meta-action" id="btn-comment-txt-${data.comment_id}">Thích</a>
+            </div>`;
 
-        const cid = data.comment_id || data.id;
+        let actionsHtml = `<span>Vừa xong</span> ${reactionHtml} <a href="#" class="meta-action" onclick="showReplyForm(${data.comment_id}); return false;">Phản hồi</a>`;
+        if(data.user === CURRENT_USER) actionsHtml += `<a href="#" class="meta-action delete" onclick="deleteComment(${data.comment_id}); return false;">Xóa</a>`;
 
         const html = `
-        <div class="comment-wrapper fade-in" id="comment-${cid}" style="padding-left: ${indent}px;">
-            <div class="d-flex position-relative">
+        <div class="comment-item fade-in" id="comment-${data.comment_id}" style="padding-left: ${indent}px;">
+            <div class="d-flex position-relative w-100">
                 ${threadLine}
-                <div class="flex-shrink-0 me-2" style="z-index: 1;">
-                    <img src="https://ui-avatars.com/api/?name=${data.user}&background=random" class="comment-avatar">
-                </div>
-                <div class="flex-grow-1">
+                <img src="https://ui-avatars.com/api/?name=${data.user}" class="my-avatar" style="margin-right: 8px;">
+                <div style="flex: 1;">
                     <div class="comment-bubble">
-                        <div class="fw-bold text-dark small">${data.user}</div>
-                        <div class="text-body small" style="white-space: pre-wrap;">${data.content}</div>
+                        <a href="#" class="comment-author-name">${data.user}</a>
+                        <div class="comment-text-content">${data.content}</div>
                         ${mediaHtml}
-                        <div class="reaction-badge" id="comment-badge-${cid}" style="display: none !important;">
-                            <i class="fas fa-thumbs-up text-primary" style="font-size: 10px;"></i>
-                            <span id="comment-count-${cid}">0</span>
+                        <div class="cmt-reaction-badge" id="comment-badge-${data.comment_id}" style="display: none !important;">
+                            <i class="fas fa-thumbs-up"></i><span id="comment-count-${data.comment_id}">0</span>
                         </div>
                     </div>
-                    <div class="d-flex gap-3 ms-2 mt-1" style="font-size: 12px; font-weight: 600;">
-                        ${actionsHtml}
-                    </div>
-                    <div id="reply-form-${cid}" class="mt-2 d-none fade-in">
+                    <div class="comment-meta">${actionsHtml}</div>
+                    <div id="reply-form-${data.comment_id}" class="mt-2 d-none fade-in">
                         <div class="d-flex align-items-center gap-2">
-                             <img src="https://ui-avatars.com/api/?name=${CURRENT_USER}" class="rounded-circle" width="24">
-                             <div class="flex-grow-1 position-relative">
-                                <input type="text" id="reply-input-${cid}" class="form-control form-control-sm rounded-pill bg-light" 
-                                    placeholder="Trả lời..." onkeydown="if(event.key === 'Enter') submitComment(${cid})">
+                             <img src="https://ui-avatars.com/api/?name=${CURRENT_USER}" class="my-avatar" style="width: 24px; height: 24px;">
+                             <div class="input-bubble" style="padding: 4px 10px;">
+                                <input type="text" id="reply-input-${data.comment_id}" placeholder="Trả lời..." 
+                                       onkeydown="if(event.key === 'Enter') submitComment({{ post.id }}, ${data.comment_id})">
                              </div>
                         </div>
                     </div>
@@ -420,437 +603,36 @@
         } else {
             document.getElementById('comments-list').insertAdjacentHTML('beforeend', html);
         }
-        updateTotalCount(1);
     }
 
-    function updatePostReactionUI(data) {
-        const countSpan = document.getElementById(`reaction-count-${data.post_id || POST_ID}`);
-        if(countSpan) countSpan.innerText = data.total_count;
-
-        if (data.user === CURRENT_USER) {
-            const btn = document.getElementById(`btn-post-like-${data.post_id || POST_ID}`);
-            const txt = document.getElementById(`text-post-like-${data.post_id || POST_ID}`);
-            if(btn && txt) updateBtnVisual(btn, txt, data.reaction_type, data.status !== 'removed');
-        }
+    function updateCount(delta) {
+        const el = document.getElementById('total-comments-label');
+        if(el) el.innerText = Math.max(0, parseInt(el.innerText) + delta);
     }
 
-    function updateCommentReactionUI(data) {
-        const countSpan = document.getElementById(`comment-count-${data.comment_id}`);
-        const badge = document.getElementById(`comment-badge-${data.comment_id}`);
-        
-        if(countSpan) countSpan.innerText = data.count;
-        if(badge) badge.style.display = data.count > 0 ? 'flex' : 'none';
-
-        if (data.user === CURRENT_USER) {
-            const btn = document.getElementById(`btn-comment-like-${data.comment_id}`);
-            if(btn) {
-                if (data.status === 'removed') {
-                    btn.className = "text-decoration-none text-muted";
-                    btn.innerText = "Thích";
-                } else {
-                    const cfg = REACTION_CONFIG[data.reaction_type] || REACTION_CONFIG['like'];
-                    btn.className = `text-decoration-none fw-bold ${cfg.colorClass}`;
-                    btn.innerText = cfg.label;
-                }
-            }
-        }
+    // LIGHTBOX
+    let currentImgIndex = 0;
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxCounter = document.getElementById('lightbox-counter');
+    function openLightbox(index) { if(ALL_POST_IMAGES.length === 0) return; currentImgIndex = index; updateLightboxImage(); lightbox.classList.add('active'); document.body.style.overflow = 'hidden'; }
+    function closeLightbox(e) { if(e) e.preventDefault(); lightbox.classList.remove('active'); document.body.style.overflow = 'auto'; }
+    function changeImg(step, e) {
+        if(e) e.stopPropagation();
+        if (ALL_POST_IMAGES.length === 0) return;
+        currentImgIndex += step;
+        if (currentImgIndex >= ALL_POST_IMAGES.length) currentImgIndex = 0;
+        else if (currentImgIndex < 0) currentImgIndex = ALL_POST_IMAGES.length - 1;
+        updateLightboxImage();
     }
-
-    function removeCommentUI(id) {
-        const el = document.getElementById(`comment-${id}`);
-        if(el) {
-            el.style.opacity = '0';
-            setTimeout(() => el.remove(), 300);
-            updateTotalCount(-1);
-        }
-    }
-
-    // --- 5. ACTIONS (FETCH WITH CSRF) ---
-
-    // --- SỬA LẠI HÀM NÀY ---
-function submitComment(postId, parentId = null) {
-    // Tạo ID động dựa trên postId để tránh trùng lặp
-    const inputId = parentId ? `reply-input-${parentId}` : 'main-comment-input';
-    
-    const contentInput = document.getElementById(inputId);
-    if (!contentInput) return; // Không tìm thấy input thì dừng
-
-    const content = contentInput.value.trim();
-    const filesInput = document.getElementById('comment-files');
-
-    if (!content && (!filesInput || filesInput.files.length === 0)) return;
-
-    let formData = new FormData();
-    formData.append('content', content);
-    if (parentId) formData.append('parent_id', parentId);
-    
-    if (!parentId && filesInput) {
-        for (let i = 0; i < filesInput.files.length; i++) {
-            formData.append('images', filesInput.files[i]);
-        }
-    }
-
-    // Dùng postId được truyền vào thay vì POST_ID toàn cục
-    fetch(`/posts/${postId}/comment/`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': csrftoken },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'ok') {
-            contentInput.value = ''; // Xóa nội dung input
-            
-            if (parentId) {
-                // Ẩn form trả lời (Chú ý ID phải khớp với HTML)
-                const replyForm = document.getElementById(`reply-form-${parentId}`);
-                if (replyForm) replyForm.classList.add('d-none');
-            } else {
-                // Reset file input nếu là comment chính
-                if (filesInput) filesInput.value = '';
-                const preview = document.getElementById('main-preview');
-                if (preview) preview.innerHTML = '';
-            }
-        } else {
-            alert(data.error || 'Có lỗi xảy ra');
-        }
-    })
-    .catch(error => console.error("Lỗi:", error));
-}
-
-    function toggleCommentReaction(id) {
-        fetch(`/posts/comment/${id}/reaction/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `reaction=like`
+    function updateLightboxImage() { lightboxImg.style.opacity = 0; setTimeout(() => { lightboxImg.src = ALL_POST_IMAGES[currentImgIndex]; lightboxImg.style.opacity = 1; }, 150); lightboxCounter.innerText = `Ảnh ${currentImgIndex + 1} / ${ALL_POST_IMAGES.length}`; }
+    document.addEventListener('keydown', e => { if(lightbox.classList.contains('active')) { if(e.key==="Escape") closeLightbox(); if(e.key==="ArrowLeft") changeImg(-1); if(e.key==="ArrowRight") changeImg(1); }});
+    document.getElementById('comment-files').onchange = (e) => {
+        const box = document.getElementById('main-preview'); box.innerHTML = '';
+        Array.from(e.target.files).forEach(f => {
+            const img = document.createElement('img'); img.src = URL.createObjectURL(f);
+            img.style.height = '60px'; img.style.borderRadius = '8px'; img.style.marginRight = '5px'; box.appendChild(img);
         });
     }
-
-    function deleteComment(id) {
-        if(confirm("Xóa bình luận?")) {
-            fetch(`/posts/comment/${id}/delete/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrftoken }
-            });
-        }
-    }
-
-    // --- 6. UTILS ---
-
-    function showReplyForm(id) {
-        document.querySelectorAll('[id^="reply-form-"]').forEach(el => el.classList.add('d-none'));
-        const form = document.getElementById(`reply-form-${id}`);
-        form.classList.remove('d-none');
-        setTimeout(() => form.querySelector('input').focus(), 100);
-    }
-
-    function autoResize(el) {
-        el.style.height = 'auto';
-        el.style.height = el.scrollHeight + 'px';
-    }
-
-    function previewFiles(input, containerId) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = '';
-        Array.from(input.files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.className = 'rounded border';
-                img.style.height = '60px';
-                container.appendChild(img);
-            }
-            reader.readAsDataURL(file);
-        });
-    }
-
-    function updateTotalCount(delta) {
-        const label = document.getElementById('total-comments-label');
-        if(label) {
-            const current = parseInt(label.innerText);
-            if(!isNaN(current)) label.innerText = (current + delta) + " bình luận";
-        }
-    }
-
-    function updateBtnVisual(btn, txt, type, isActive) {
-        btn.className = "btn w-100 action-btn"; 
-        const icon = btn.querySelector('i');
-        icon.className = "me-2"; 
-        
-        if(isActive) {
-            const cfg = REACTION_CONFIG[type] || REACTION_CONFIG['like'];
-            btn.classList.add('fw-bold', cfg.colorClass); 
-            icon.classList.add('fas', cfg.icon);
-            txt.innerText = cfg.label;
-        } else {
-            icon.classList.add('far', 'fa-thumbs-up');
-            txt.innerText = "Thích";
-        }
-    }
-    
-    // Global function for Post Card (Post Like)
-    window.toggleReaction = function(postId, type) {
-        fetch(`/posts/${postId}/reaction/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `reaction=${type}`
-        });
-    };
-</script>
-<script>
-    // ========================================
-    // GLOBAL JAVASCRIPT FOR POSTS
-    // ========================================
-    
-    // 1. CSRF TOKEN HELPER
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    const csrftoken = getCookie('csrftoken');
-
-    // 2. REACTION FUNCTIONS
-    let reactionTimeout;
-    
-    function delayShowReactions(postId) {
-        clearTimeout(reactionTimeout);
-        reactionTimeout = setTimeout(() => {
-            const picker = document.getElementById(`reaction-picker-${postId}`);
-            if (picker) picker.style.display = 'block';
-        }, 500);
-    }
-    
-    function hideReactions(postId) {
-        clearTimeout(reactionTimeout);
-        setTimeout(() => {
-            const picker = document.getElementById(`reaction-picker-${postId}`);
-            if (picker) picker.style.display = 'none';
-        }, 300);
-    }
-    
-    function showReactionPicker(postId) {
-        const picker = document.getElementById(`reaction-picker-${postId}`);
-        if (picker) {
-            const isVisible = picker.style.display === 'block';
-            document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-            picker.style.display = isVisible ? 'none' : 'block';
-        }
-    }
-    
-    function toggleReaction(postId, type) {
-        type = type || 'like';
-        const btn = document.getElementById(`btn-post-like-${postId}`);
-        const text = document.getElementById(`text-post-like-${postId}`);
-        const countSpan = document.getElementById(`reaction-count-${postId}`);
-        
-        // Hide picker
-        const picker = document.getElementById(`reaction-picker-${postId}`);
-        if (picker) picker.style.display = 'none';
-        
-        fetch(`/posts/${postId}/reaction/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrftoken,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: `reaction=${type}`
-        })
-        .then(res => {
-            if (!res.ok) throw new Error("Network error");
-            return res.json();
-        })
-        .then(data => {
-            if (data.status === 'added' || data.status === 'changed') {
-                btn.classList.add('reaction-active');
-                btn.classList.remove('text-muted');
-                const names = {
-                    'like': 'Thích',
-                    'love': 'Yêu thích',
-                    'haha': 'Haha',
-                    'sad': 'Buồn',
-                    'angry': 'Phẫn nộ'
-                };
-                text.innerText = names[type] || 'Thích';
-            } else {
-                btn.classList.remove('reaction-active');
-                btn.classList.add('text-muted');
-                text.innerText = "Thích";
-            }
-            if (countSpan && data.total_count !== undefined) {
-                countSpan.innerText = data.total_count;
-            }
-        })
-        .catch(err => {
-            console.error('Reaction error:', err);
-            alert('Có lỗi xảy ra. Vui lòng thử lại.');
-        });
-    }
-
-    // 3. POST ACTIONS
-    function sharePost(postId) {
-        const caption = prompt("Viết lời nhắn khi chia sẻ (tùy chọn):");
-        if (caption !== null) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/posts/${postId}/share/`;
-            
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrftoken;
-            
-            const captionInput = document.createElement('input');
-            captionInput.type = 'hidden';
-            captionInput.name = 'caption';
-            captionInput.value = caption;
-            
-            form.appendChild(csrfInput);
-            form.appendChild(captionInput);
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
-    
-    function deletePost(postId) {
-        if (confirm("Bạn có chắc muốn xóa bài viết này?")) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/posts/${postId}/delete/`;
-            
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrftoken;
-            
-            form.appendChild(csrfInput);
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
-
-    // 4. COMMENT FUNCTIONS
-    function submitComment(parentId, inputEl) {
-        if (typeof POST_ID === 'undefined') {
-            console.error('POST_ID is not defined');
-            return;
-        }
-        
-        const el = inputEl || document.getElementById('main-comment-input');
-        if (!el) {
-            console.error('Comment input not found');
-            return;
-        }
-        
-        const content = el.value.trim();
-        if (!content) {
-            alert('Vui lòng nhập nội dung bình luận');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('content', content);
-        if (parentId) formData.append('parent_id', parentId);
-
-        fetch(`/posts/${POST_ID}/comment/`, {
-            method: 'POST',
-            headers: {'X-CSRFToken': csrftoken},
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'ok') {
-                el.value = '';
-                if (parentId) {
-                    const replyBox = document.getElementById(`reply-box-${parentId}`);
-                    if (replyBox) replyBox.classList.add('d-none');
-                }
-            } else {
-                alert(data.error || 'Có lỗi xảy ra');
-            }
-        })
-        .catch(err => {
-            console.error('Comment error:', err);
-            alert('Có lỗi xảy ra. Vui lòng thử lại.');
-        });
-    }
-
-    function toggleCommentLike(commentId) {
-        fetch(`/posts/comment/${commentId}/reaction/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrftoken,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: 'reaction=like'
-        })
-        .then(res => res.json())
-        .then(data => {
-            const linkEl = document.getElementById(`comment-like-${commentId}`);
-            if (linkEl) {
-                if (data.status === 'added' || data.status === 'changed') {
-                    linkEl.classList.add('text-primary', 'fw-bold');
-                    linkEl.classList.remove('text-muted');
-                } else {
-                    linkEl.classList.remove('text-primary', 'fw-bold');
-                    linkEl.classList.add('text-muted');
-                }
-            }
-        })
-        .catch(err => console.error('Comment reaction error:', err));
-    }
-
-    function deleteComment(commentId) {
-        if (!confirm("Bạn có chắc muốn xóa bình luận này?")) return;
-        
-        fetch(`/posts/comment/${commentId}/delete/`, {
-            method: 'POST',
-            headers: {'X-CSRFToken': csrftoken}
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status !== 'ok') {
-                alert(data.error || 'Có lỗi xảy ra');
-            }
-        })
-        .catch(err => console.error('Delete comment error:', err));
-    }
-
-    function showReply(commentId) {
-        const box = document.getElementById(`reply-box-${commentId}`);
-        if (box) {
-            box.classList.toggle('d-none');
-            if (!box.classList.contains('d-none')) {
-                const input = box.querySelector('input');
-                if (input) input.focus();
-            }
-        }
-    }
-
-    // 5. UTILITY
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // 6. CLOSE PICKERS ON OUTSIDE CLICK
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.reaction-btn') && !e.target.closest('.reaction-picker')) {
-            document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-        }
-    });
-    
-    console.log('✅ Posts global functions loaded');
 </script>
 {% endblock %}

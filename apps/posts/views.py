@@ -96,12 +96,15 @@ def post_detail_view(request, post_id):
     reaction_counts = PostReaction.objects.filter(post=post).values('reaction_type').annotate(count=Count('id'))
     reaction_breakdown = {item['reaction_type']: item['count'] for item in reaction_counts}
 
+    count_comment = get_comment_count(post)
+
     context = {
         "post": post,
         "comments": comments,
         "reaction_breakdown": reaction_breakdown,
         "total_reactions": PostReaction.objects.filter(post=post).count(),
         "total_comments": comments.count(),
+        "count_comment": count_comment,
     }
 
     return render(request, "posts/post_detail.html", context)
@@ -149,6 +152,7 @@ def edit_post_view(request, post_id):
         content = request.POST.get("content")
         privacy = request.POST.get("privacy")
         tag_users = request.POST.getlist("tagged_users")
+        print(f"[DEBUG] Tagged Users: {tag_users}")
         location = request.POST.get("location", "")
         
         # 1. Lấy file MỚI upload lên
