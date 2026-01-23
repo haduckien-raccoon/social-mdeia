@@ -103,7 +103,7 @@
             <div class="nav-item"><i class="fa-regular fa-heart"></i> <span>Notifications</span></div>
             <div class="nav-item" onclick="createPost()"><i class="fa-regular fa-square-plus"></i> <span>Create</span></div>
             <div class="nav-item" onclick="profile()">
-                <i class="fa-solid fa-circle-user"></i> <span>{{ user.username }}</span>
+                <i class="fa-solid fa-circle-user"></i> <span>{{ request.user.username }}</span>
             </div>
         </nav>
         <div class="nav-item"><i class="fa-solid fa-bars"></i> <span>More</span></div>

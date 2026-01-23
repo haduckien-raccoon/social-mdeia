@@ -63,7 +63,7 @@ def logout_view(request):
     if refresh_token:
         logout_user(refresh_token)
 
-    response = redirect("login")
+    response = redirect("/accounts/login")
     response.delete_cookie("access")
     response.delete_cookie("refresh")
     return response
@@ -146,7 +146,7 @@ def verify_email_view(request):
 
 #profile
 @csrf_exempt
-def profile_view(request, id=None):
+def profile_view(request, id=None, username=None):
     # Lấy chính user từ token (như cũ)
     access_token = request.COOKIES.get("access")
     if not access_token:
@@ -167,6 +167,9 @@ def profile_view(request, id=None):
         if id:
             # Xem profile người khác
             user = get_object_or_404(User, id=id)
+        elif username:
+            # Xem profile người khác theo username
+            user = get_object_or_404(User, username=username)
         else:
             # Nếu không truyền username, xem profile chính mình
             user = current_user

@@ -235,21 +235,39 @@ def delete_post(user, post):
     })
 
 @transaction.atomic
-def share_post(user, original_post, caption="", privacy="public"):
-    """Chia sẻ bài viết"""
+def share_post(user, post_to_share, caption="", privacy="public"):
+    """
+    Share bài viết
+    - Share bài gốc → original_post = bài đó
+    - Share bài share → original_post = bài gốc
+    """
+
+    # 1. Chuẩn hoá bài gốc (ROOT POST)
+    if hasattr(post_to_share, "shared_post") and post_to_share.shared_post.exists():
+        # post_to_share là bài share → lấy bài gốc
+        original_post = post_to_share.shared_post.first().original_post
+    else:
+        # post_to_share là bài gốc
+        original_post = post_to_share
+
+    # 2. Tạo post mới (post share)
     new_post = Post.objects.create(
         author=user,
         content=caption,
         privacy=privacy,
     )
+
+    # 3. Ghi PostShare
     PostShare.objects.create(
-        user=user,  
+        user=user,
         original_post=original_post,
         new_post=new_post,
         caption=caption,
-        privacy=privacy
+        privacy=privacy,
     )
+
     return new_post
+
 
 # =====================================================
 # 5. COMMENT WRITE LOGIC (REALTIME)
@@ -464,8 +482,11 @@ def toggle_hide_counts(post, user, hide_comment=None, hide_reaction=None):
     post.save()
     return post
 
-def report_target(user, target_type, target_id, reason=None, custom_reason=""):
+def report_target(user, target_type, target_id, reason_id=None, custom_reason=""):
     """Báo cáo bài viết hoặc bình luận"""
+    reason = None
+    if reason_id:
+        reason = ReportReason.objects.filter(id=reason_id).first()
     report = Report.objects.create(
         reporter=user,
         target_type=target_type,

@@ -27,7 +27,7 @@ urlpatterns = [
     path("<int:post_id>/share/", share_post_view, name="share_post"),
 
     # Report
-    path("report/", report_view, name="report"),
+    path("report/", report_view, name="report_post"),
     
     # Settings
     path("<int:post_id>/toggle-commenting/", toggle_commenting_view, name="toggle_commenting"),

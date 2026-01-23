@@ -128,14 +128,14 @@ body { display:flex; min-height:100vh; }
 </aside>
 
 <aside class="menu-sidebar">
-    <a href="{% url 'profile' %}" class="back-link"><i class="fa-solid fa-chevron-left"></i> My Profile</a>
+    <a href="{% url 'accounts:profile' %}" class="back-link"><i class="fa-solid fa-chevron-left"></i> My Profile</a>
     <h2 style="margin-bottom:15px; font-size:18px;">Edit profile</h2>
     <ul class="menu-list">
-        <li class="menu-item" onclick="location.href='{% url 'edit_profile' %}'"><i class="fa-solid fa-pen"></i> Edit profile</li>
+        <li class="menu-item" onclick="location.href='{% url 'accounts:edit_profile' %}'"><i class="fa-solid fa-pen"></i> Edit profile</li>
         <li class="menu-item" onclick="location.href='/notifications'"><i class="fa-regular fa-bell"></i> Notification</li>
         <li class="menu-item active"><i class="fa-solid fa-envelope"></i> Update Email</li>
-        <li class="menu-item" onclick="location.href='{% url 'update_username' %}'"><i class="fa-solid fa-at"></i> Update Username</li>
-        <li class="menu-item" onclick="location.href='{% url 'update_password' %}'"><i class="fa-solid fa-key"></i> Update Password</li>
+        <li class="menu-item" onclick="location.href='{% url 'accounts:update_username' %}'"><i class="fa-solid fa-at"></i> Update Username</li>
+        <li class="menu-item" onclick="location.href='{% url 'accounts:update_password' %}'"><i class="fa-solid fa-key"></i> Update Password</li>
         <li class="menu-item"><i class="fa-solid fa-gear"></i> Appearance</li>
         <li class="menu-item"><i class="fa-regular fa-circle-question"></i> Settings</li>
     </ul>
@@ -190,7 +190,7 @@ body { display:flex; min-height:100vh; }
                         <i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i>
                         Change Email & Logout
                     </button>
-                    <a href="{% url 'profile' %}" class="btn-cancel">
+                    <a href="{% url 'accounts:profile' %}" class="btn-cancel">
                         <i class="fa-solid fa-times" style="margin-right:8px;"></i>
                         Cancel
                     </a>

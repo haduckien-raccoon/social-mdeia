@@ -20,12 +20,12 @@
         padding: 20px 10px;
         font-family: Segoe UI, Helvetica, Arial, sans-serif;
         background-color: var(--bg-gray);
-        min-height: 100vh;
+        min-height: 90vh;
     }
 
     .card-post {
-        width: 100%;
-        max-width: 500px;
+        width: 600px;
+        max-width: 600px;
         background: var(--card-bg);
         border-radius: var(--radius);
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -279,7 +279,7 @@
                 {% csrf_token %}
 
                 <div class="user-row">
-                    <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=random">
+                    <img src="{{ request.user.profile.avatar.url | default:"images/avatars/normal.jpg"}}" alt="User Avatar">
                     <div>
                         <div class="user-name">{{ request.user.username }}</div>
                         <select class="privacy" name="privacy">
@@ -353,7 +353,7 @@
         <div class="friend-list">
             {% for f in friends %}
             <label class="friend" data-name="{{ f.username|lower }}">
-                <img src="https://ui-avatars.com/api/?name={{ f.username }}&background=random" 
+                <img src="{{ f.profile.avatar.url | default:"images/avatars/normal.jpg" }}"
                      style="width:36px;height:36px;border-radius:50%">
                 <span>{{ f.username }}</span>
                 <input type="checkbox" class="friendChk" value="{{ f.id }}" data-name="{{ f.username }}" hidden 
