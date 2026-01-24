@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* --- CSS CHO THANH TÌM KIẾM (GIỮ NGUYÊN) --- */
+    .search-wrapper {
+        position: relative; 
+        max-width: 600px;
+        margin: 30px auto;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        z-index: 900;
+        width: 100%;
+        height: fit-content;
+        align-self: flex-start;
+    }
+
+    .search-input-group { position: relative; display: flex; align-items: center; z-index: 901; }
+    .search-icon-static { position: absolute; left: 15px; color: #65676b; pointer-events: none; z-index: 902; }
+    
+    .search-box {
+        width: 100%; padding: 12px 20px 12px 45px; border-radius: 50px;
+        border: 1px solid transparent; background-color: #f0f2f5;
+        font-size: 15px; outline: none; transition: all 0.2s ease;
+    }
+    .search-box:focus { background-color: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); border-color: #ddd; }
+
+    /* Spinner */
+    .search-loading { position: absolute; right: 15px; display: none; z-index: 902; }
+    .spinner { width: 18px; height: 18px; border: 2px solid #f3f3f3; border-top: 2px solid #1877f2; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Dropdown Gợi ý (Floating) */
+    .history-dropdown {
+        position: absolute; top: 100%; left: 0; right: 0; margin-top: 8px;
+        background: white; border-radius: 8px;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0,0,0,0.1); 
+        display: none; z-index: 9999;
+        max-height: 400px; overflow-y: auto; border: 1px solid #ddd;
+    }
+    .dropdown-header { padding: 12px 16px 8px; font-size: 13px; font-weight: 700; color: #65676b; background-color: #fff; position: sticky; top: 0; z-index: 1; }
+    .history-item { padding: 8px 16px; display: flex; align-items: center; cursor: pointer; transition: background-color 0.1s; }
+    .history-item:hover { background-color: #f2f2f2; }
+    .history-item img { width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; object-fit: cover; border: 1px solid #eee; }
+    .history-icon-circle { width: 40px; height: 40px; min-width: 40px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; color: #65676b; }
+    .item-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .item-name { font-weight: 600; font-size: 15px; color: #050505; }
+    .item-sub { font-size: 13px; color: #65676b; }
+
+    /* --- CSS MỚI: KẾT QUẢ TÌM KIẾM FULL (LIST) --- */
+    .main-results-container {
+        margin-top: 20px;
+        background: #fff;
+        border-radius: 8px;
+        padding: 10px;
+        /* Nếu muốn khung kết quả có bóng đổ giống FB */
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); 
+        display: none; /* Ẩn mặc định */
+    }
+
+    .result-card {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #f0f2f5;
+        transition: background 0.2s;
+        border-radius: 8px;
+    }
+    .result-card:hover { background-color: #fafafa; }
+    .result-card:last-child { border-bottom: none; }
+    
+    .result-card img {
+        width: 60px; height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 1px solid #eee;
+    }
+    
+    .result-info { flex: 1; }
+    .result-name { font-size: 17px; font-weight: 600; color: #050505; margin-bottom: 4px; }
+    .result-detail { font-size: 14px; color: #65676b; }
+
+    .result-action .btn-view {
+        padding: 8px 20px;
+        background-color: #e4e6eb;
+        color: #050505;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 15px;
+        transition: 0.2s;
+    }
+    .result-action .btn-view:hover { background-color: #d8dadf; }
+
+</style>
+
+<div class="search-wrapper">
+    <div class="search-input-group">
+        <div class="search-icon-static">
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+        </div>
+        
+        <input type="text" id="searchInput" class="search-box" placeholder="Tìm kiếm trên Facebook..." autocomplete="off">
+        
+        <div class="search-loading" id="searchLoading">
+            <div class="spinner"></div>
+        </div>
+    </div>
+    
+    <div id="historyList" class="history-dropdown"></div>
+
+    <div id="mainResults" class="main-results-container">
+        </div>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const historyList = document.getElementById('historyList');
+    const mainResults = document.getElementById('mainResults');
+    const searchLoading = document.getElementById('searchLoading');
+    let debounceTimer;
+    
+    // --- BIẾN MỚI QUAN TRỌNG ---
+    // Biến này giúp chặn dropdown hiện ra khi đang xem kết quả full
+    let isShowingResults = false;
+
+    // --- SỰ KIỆN ---
+
+    // 1. Focus: Chỉ hiện gợi ý nếu CHƯA hiển thị kết quả full
+    searchInput.addEventListener('focus', function() {
+        // Nếu đang xem kết quả full thì KHÔNG hiện dropdown gợi ý nữa
+        if (isShowingResults) return;
+
+        if (this.value.trim() === "") {
+            loadHistory();
+        } else {
+            searchUsersSuggestions(this.value); 
+        }
+    });
+
+    // 2. Gõ phím: Người dùng muốn tìm cái mới -> Reset mọi thứ
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        clearTimeout(debounceTimer);
+
+        // Khi gõ chữ mới:
+        isShowingResults = false;       // Tắt chế độ xem kết quả
+        mainResults.style.display = 'none'; // Ẩn khung kết quả cũ ngay lập tức
+
+        if (query === "") {
+            toggleLoading(false);
+            loadHistory();
+        } else {
+            toggleLoading(true);
+            debounceTimer = setTimeout(() => {
+                searchUsersSuggestions(query);
+            }, 400);
+        }
+    });
+
+    // 3. BẤM ENTER: Chốt tìm kiếm -> Hiện Full -> Chặn Dropdown
+    searchInput.addEventListener('keypress', async function (e) {
+        if (e.key === 'Enter') {
+            const text = searchInput.value.trim();
+            if (text) {
+                // Đánh dấu là đang xem kết quả
+                isShowingResults = true;
+
+                // Ẩn ngay dropdown gợi ý
+                historyList.style.display = 'none';
+                
+                // Blur để tắt bàn phím ảo (trên điện thoại) và bỏ focus
+                searchInput.blur();
+
+                // Lưu lịch sử và tìm kiếm
+                saveHistory('query', text);
+                await renderFullResults(text);
+            }
+        }
+    });
+
+    // 4. Click ra ngoài
+    document.addEventListener('click', function(e) {
+        const wrapper = document.querySelector('.search-wrapper');
+        if (!wrapper.contains(e.target)) {
+            historyList.style.display = 'none';
+            // Không ẩn mainResults để người dùng đọc kết quả thoải mái
+        }
+    });
+
+
+    // --- LOGIC HÀM (GIỮ NGUYÊN) ---
+
+    function toggleLoading(show) {
+        searchLoading.style.display = show ? 'block' : 'none';
+    }
+
+    async function searchUsersSuggestions(query) {
+        try {
+            const url = `{% url 'search:api_search_users' %}?q=${encodeURIComponent(query)}`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                renderDropdown(data.results, 'search');
+            }
+        } catch (err) { console.error(err); } 
+        finally { toggleLoading(false); }
+    }
+
+    async function renderFullResults(query) {
+        toggleLoading(true);
+        mainResults.innerHTML = '<div style="padding:20px; text-align:center;">Đang tải...</div>';
+        mainResults.style.display = 'block'; // Hiện khung kết quả
+
+        try {
+            const url = `{% url 'search:api_search_users' %}?q=${encodeURIComponent(query)}&limit=all`;
+            const res = await fetch(url);
+            
+            if (res.ok) {
+                const data = await res.json();
+                const items = data.results;
+
+                if (items.length === 0) {
+                    mainResults.innerHTML = `<div style="padding: 20px; text-align: center; color: #65676b;">Không tìm thấy kết quả nào cho "<b>${query}</b>"</div>`;
+                } else {
+                    let html = `<div style="padding: 10px 15px; font-weight:bold; font-size:18px; border-bottom:1px solid #eee;">Mọi người</div>`;
+                    items.forEach(item => {
+                        html += `
+                        <div class="result-card">
+                            <a href="/accounts/profile/${item.id}/">
+                                <img src="${item.avatar}" alt="${item.username}">
+                            </a>
+                            <div class="result-info">
+                                <div class="result-name">
+                                    <a href="/accounts/profile/${item.id}/">${item.full_name}</a>
+                                </div>
+                                <div class="result-detail">${item.email}</div>
+                            </div>
+                            <div class="result-action">
+                                <a href="/accounts/profile/${item.id}/" class="btn-view">Xem trang</a>
+                            </div>
+                        </div>`;
+                    });
+                    mainResults.innerHTML = html;
+                }
+            }
+        } catch (err) {
+            mainResults.innerHTML = '<div style="color:red; text-align:center;">Lỗi tải dữ liệu.</div>';
+        } finally {
+            toggleLoading(false);
+        }
+    }
+
+    function renderDropdown(items, mode) {
+        // Logic dropdown giữ nguyên...
+        if (!items || items.length === 0) {
+            historyList.style.display = 'none';
+            return;
+        }
+        
+        let html = '';
+        if (mode === 'search') html += `<div class="dropdown-header">GỢI Ý</div>`;
+        else html += `<div class="dropdown-header">GẦN ĐÂY</div>`;
+
+        items.forEach(item => {
+            if (mode === 'search') {
+                html += `
+                <div class="history-item" onclick="handleClickUser(${item.id})">
+                    <img src="${item.avatar}" alt="Ava">
+                    <div class="item-info">
+                        <div class="item-name">${item.full_name}</div>
+                        <div class="item-sub">User • ${item.email}</div>
+                    </div>
+                </div>`;
+            } else {
+                if (item.type === 'user') {
+                    html += `
+                    <div class="history-item" onclick="handleClickUser(${item.target_id})">
+                        <img src="${item.avatar}" alt="Ava">
+                        <div class="item-info">
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-sub">Đã xem gần đây</div>
+                        </div>
+                    </div>`;
+                } else {
+                    html += `
+                    <div class="history-item" onclick="handleClickQuery('${item.text}')">
+                        <div class="history-icon-circle">
+                            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+                        </div>
+                        <div class="item-info">
+                            <div class="item-name">${item.text}</div>
+                        </div>
+                    </div>`;
+                }
+            }
+        });
+        historyList.innerHTML = html;
+        historyList.style.display = 'block';
+    }
+
+    async function loadHistory() {
+        try {
+            const res = await fetch("{% url 'search:api_get_history' %}");
+            if (res.ok) {
+                const data = await res.json();
+                renderDropdown(data.results, 'history');
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    async function saveHistory(type, value) {
+        await fetch("{% url 'search:api_save_history' %}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({ type: type, value: value })
+        });
+    }
+
+    async function handleClickUser(targetId) {
+        await saveHistory('user', targetId);
+        window.location.href = `/accounts/profile/${targetId}/`; 
+    }
+
+    async function handleClickQuery(text) {
+        searchInput.value = text;
+        
+        // Khi click vào từ khóa trong lịch sử -> Coi như bấm Enter
+        isShowingResults = true; 
+        historyList.style.display = 'none'; // Ẩn dropdown
+        
+        saveHistory('query', text); 
+        renderFullResults(text); // Hiện kết quả full
+    }
+</script>
+{% endblock %}

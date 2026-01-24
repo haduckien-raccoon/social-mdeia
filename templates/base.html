@@ -96,7 +96,7 @@
         <a href="/" class="logo">SUDO</a>
         <nav class="nav-menu">
             <div class="nav-item" onclick="goHome()"><i class="fa-solid fa-house"></i> <span>Home</span></div>
-            <div class="nav-item"><i class="fa-solid fa-magnifying-glass"></i> <span>Search</span></div>
+            <div class="nav-item" onclick="search()"><i class="fa-solid fa-magnifying-glass"></i> <span>Search</span></div>
             <div class="nav-item" onclick="friend()"><i class="fa-solid fa-user-group"></i><span>Friend</span></div>
             <div class="nav-item"><i class="fa-solid fa-people-group"></i> <span>Group</span></div>
             <div class="nav-item"><i class="fa-brands fa-facebook-messenger"></i> <span>Messages</span></div>
@@ -121,6 +121,7 @@
         function profile() { window.location.href = "/accounts/profile/"; }
         function friend() { window.location.href = "/friends/"; }
         function createPost() { window.location.href = "/posts/create/"; }
+        function search() { window.location.href = "/search/"; }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     

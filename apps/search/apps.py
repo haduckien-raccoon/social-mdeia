@@ -1,6 +1,5 @@
 from django.apps import AppConfig
 
 
-class PostsConfig(AppConfig):
+class SearchConfig(AppConfig):
     name = "apps.search"
-    verbose_name = "Tìm kiếm"

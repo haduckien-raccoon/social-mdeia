@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.friends",
     "apps.posts",
+    "apps.search",
     "apps.groups",
     "apps.chat",
     "apps.notifications",

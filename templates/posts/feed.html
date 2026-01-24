@@ -136,9 +136,9 @@
                     </div>
                 </div>
                 <div class="cp-actions">
-                    <div class="cp-btn"><i class="fas fa-video text-danger me-2"></i> Trực tiếp</div>
-                    <div class="cp-btn"><i class="fas fa-images text-success me-2"></i> Ảnh/Video</div>
-                    <div class="cp-btn"><i class="far fa-smile text-warning me-2"></i> Cảm xúc</div>
+                    {% comment %} <div class="cp-btn"><i class="fas fa-video text-danger me-2"></i> Trực tiếp</div> {% endcomment %}
+                    <div class="cp-btn" onclick="window.location.href='{% url 'posts:create' %}'"><i class="fas fa-images text-success me-2"></i> Ảnh</div>
+                    <div class="cp-btn" onclick="window.location.href='{% url 'posts:create' %}'"><i class="far fa-smile text-warning me-2"></i> Cảm xúc</div>
                 </div>
             </div>
 
